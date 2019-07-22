@@ -1,0 +1,19 @@
+
+PRE_RELEASE
+
+1. Check ToDos
+2. Check all exceptions log at level 20 in AppLogDirect
+
+
+
+RELEASE
+
+1. Update version code in app gradle
+        versionCode 151
+        versionName "151"
+
+2. Build APK
+
+3. Send by Telegram to the phone
+
+

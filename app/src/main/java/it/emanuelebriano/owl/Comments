@@ -1,0 +1,7 @@
+<LELE-COMMENT>
+            <receiver android:name="it.emanuelebriano.owl.OwlBroadcastReceiver" >
+                <intent-filter>
+                    <action android:name="com.eveningoutpost.dexdrip.BgEstimate" />
+                </intent-filter>
+            </receiver>
+        </LELE-COMMENT>

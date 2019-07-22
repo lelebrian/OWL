@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_mad"
+            android:icon="@drawable/ic_edit"
+            android:title="MAD" />
+
+        <item
+            android:id="@+id/nav_update"
+            android:icon="@drawable/ic_update"
+            android:title="Update" />
+
+
+
+    </group>
+
+    <item android:title="Sviluppo">
+        <item
+            android:id="@+id/nav_test_read_forecast"
+            android:icon="@drawable/ic_receipt"
+            android:title="Test Read Forecast" />
+
+        <item
+            android:id="@+id/nav_test_alarm"
+            android:icon="@drawable/ic_notify_medium"
+            android:title="Test Alarm" />
+
+        <item
+            android:id="@+id/nav_test_alarm_high"
+            android:icon="@drawable/ic_notify_high"
+            android:title="Test Alarm High" />
+
+        <item
+            android:id="@+id/nav_restart_workers"
+            android:icon="@drawable/ic_restart"
+            android:title="Restart Workers" />
+
+        <!--
+        <item
+            android:id="@+id/nav_slideshow"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="Slideshow" />
+        <item
+            android:id="@+id/nav_manage"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="Tools" />
+
+        <menu>
+            <item
+                android:id="@+id/nav_share"
+                android:icon="@drawable/ic_menu_share"
+                android:title="Share" />
+            <item
+                android:id="@+id/nav_send"
+                android:icon="@drawable/ic_menu_send"
+                android:title="Send" />
+        </menu>
+        -->
+    </item>
+
+</menu>

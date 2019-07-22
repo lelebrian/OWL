@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:defaultValue="1"
+        android:entries="@array/intervals"
+        android:entryValues="@array/intervals"
+        android:key="owl_interval"
+        android:summary="(minuti)"
+        android:title="Leggi ogni" />
+
+    <ListPreference
+        android:defaultValue="2"
+        android:entries="@array/debuglevels"
+        android:entryValues="@array/debuglevels"
+        android:key="web_debug_level"
+        android:summary="(0 is max)"
+        android:title="Debug level" />
+
+    <ListPreference
+        android:defaultValue="false"
+        android:entries="@array/killduplicatelevels"
+        android:entryValues="@array/killduplicatelevels"
+        android:key="kill_duplicate"
+        android:summary=""
+        android:title="Kill duplicate" />
+
+</PreferenceScreen>
