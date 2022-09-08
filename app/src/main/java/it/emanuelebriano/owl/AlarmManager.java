@@ -1,8 +1,10 @@
 package it.emanuelebriano.owl;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -27,9 +29,15 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
+import static android.app.Notification.PRIORITY_HIGH;
 import static android.app.Notification.VISIBILITY_PUBLIC;
 
 // https://stackoverflow.com/questions/50567164/custom-notification-sound-not-working-in-oreo
@@ -86,8 +94,12 @@ public final class AlarmManager {
     public static int sensor_Last_Estimate_Memory_7 = 0;
     public static int sensor_Last_Estimate_Memory_8 = 0;
 
+    public static LinkedHashMap<String,Integer> hashmap_Sensor_Readings = new LinkedHashMap<String,Integer>();
+
     public static int last_Alarm_Level = 0;
     public static long last_Alarm_Time = 0;
+    public static long last_Snooze_Time = 0;
+    public static long last_Snooze_Interval = 0;
 
     public static int threshold_low = 90;
     public static int slope_factor_hour = 60;
@@ -102,21 +114,24 @@ public final class AlarmManager {
 
     static int notificationId_Low = 10;
     static int notificationId_Medium = 20;
-    static int notificationId_High = 30;
+    static int notificationId_High = 40;
 
     static String CHANNEL_ID_Low = "OwlLow";
     static String CHANNEL_ID_Medium = "OwlMedium";
-    static String CHANNEL_ID_High = "OwlHigh";
+    static String CHANNEL_ID_High = "OwlHigh22032020";
 
     static Uri alarmSound_Low = null;
     static Uri alarmSound_Medium = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     static Uri alarmSound_High = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
 
+
     static long[] pattern_Low = {500};  // 1 vibrazione
     static long[] pattern_Medium = {500, 500, 500};  // 2 vibrazioni
-    static long[] pattern_High = {500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-            500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-            500, 500, 500, 500, 500, 500, 500, 500, 500};  // 15 suoni
+    static long[] pattern_High = {500, 500, 500, 500, 500,
+                                500, 500, 500, 500, 500,
+                                500, 500, 500, 500, 500 };  // 15 suoni
+
+    static int kill_duplicate_interval_seconds = 60;
 
 
     private static void createNotificationChannels_if_Null(Context ctx) {
@@ -129,13 +144,22 @@ public final class AlarmManager {
             createNotificationChannel_Low(ctx);
     }
 
+    public static void setSnooze(int interval)
+    {
+        Constants.AppLogDirect(30, "   AlarmManager.setSnooze(" + String.valueOf(interval) + ")");
+
+        last_Snooze_Time = System.currentTimeMillis();
+        //long l_OneMinute = 60 * 1000;
+        last_Snooze_Interval = interval;
+    }
+
     private static void createNotificationChannel_Low(Context ctx) {
         try {
             // Create the NotificationChannel, but only on API 26+ because
             // the NotificationChannel class is new and not in the support library
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                CharSequence name = "OwlMediumChannel";
-                String description = "OWL normal notifications";
+                CharSequence name = "OwlLowChannel";
+                String description = "OWL low level notifications";
                 int importance = NotificationManager.IMPORTANCE_DEFAULT;
                 channel_Low = new NotificationChannel(CHANNEL_ID_Low, name, importance);
                 channel_Low.setDescription(description);
@@ -157,7 +181,6 @@ public final class AlarmManager {
         }
     }
 
-
     private static void createNotificationChannel_Medium(Context ctx) {
         try {
             // Create the NotificationChannel, but only on API 26+ because
@@ -165,7 +188,7 @@ public final class AlarmManager {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 CharSequence name = "OwlMediumChannel";
                 String description = "OWL normal notifications";
-                int importance = NotificationManager.IMPORTANCE_DEFAULT;
+                int importance = NotificationManager.IMPORTANCE_HIGH;
                 channel_Medium = new NotificationChannel(CHANNEL_ID_Medium, name, importance);
                 channel_Medium.setDescription(description);
                 channel_Medium.enableLights(true);
@@ -173,11 +196,14 @@ public final class AlarmManager {
                 channel_Medium.setSound(alarmSound_Medium, null);
                 channel_Medium.setVibrationPattern(pattern_Medium);
                 channel_Medium.enableVibration(true);
+                channel_High.setShowBadge(true);
 
                 // Register the channel with the system; you can't change the importance
                 // or other notification behaviors after this
                 NotificationManager notificationManager = ctx.getSystemService(NotificationManager.class);
                 notificationManager.createNotificationChannel(channel_Medium);
+
+                Constants.AppLogDirect(0,"Channel Medium registered");
             }
         }
         catch(Exception e)
@@ -188,6 +214,10 @@ public final class AlarmManager {
 
     private static void createNotificationChannel_High(Context ctx) {
         try {
+
+            // test 22/03/2020
+            // alarmSound_High = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://"+ ctx.getPackageName() + "/" + R.raw.wannabeloved);
+
             // Create the NotificationChannel, but only on API 26+ because
             // the NotificationChannel class is new and not in the support library
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -196,18 +226,33 @@ public final class AlarmManager {
                 String description =  "OWL High level notifications";
                 int importance = NotificationManager.IMPORTANCE_HIGH;
 
+                // test 22/03/2020
+                NotificationManager mNotificationManager = ctx.getSystemService(NotificationManager.class);
+                NotificationChannel existingChannel = mNotificationManager.getNotificationChannel(CHANNEL_ID_High);
+                //it will delete existing channel if it exists
+                if (existingChannel != null) {
+                    mNotificationManager.deleteNotificationChannel(CHANNEL_ID_High);
+                }
+
                 channel_High = new NotificationChannel(CHANNEL_ID_High, name, importance);
                 channel_High.setDescription(description);
                 channel_High.enableLights(true);
                 channel_High.setLightColor(Color.BLUE);
-                channel_High.setSound(alarmSound_High, null);
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM) // NEW 22/03/2020
+                        .build();
+                channel_High.setSound(alarmSound_High, audioAttributes);
                 channel_High.setVibrationPattern(pattern_High);
                 channel_High.enableVibration(true);
                 channel_High.setShowBadge(true);
+                //channel_High.setImportance( importance );   // NEW 28-02-2020
                 // Register the channel with the system; you can't change the importance
                 // or other notification behaviors after this
                 NotificationManager notificationManager = ctx.getSystemService(NotificationManager.class);
                 notificationManager.createNotificationChannel(channel_High);
+
+                Constants.AppLogDirect(0,"Channel High registered");
             }
         }
         catch(Exception e)
@@ -215,7 +260,6 @@ public final class AlarmManager {
             Constants.AppLogDirect(20,"AlarmManager exception: " + e.getMessage());
         }
     }
-
 
     public static void CheckMissingAlarm(Context ctx, double elapsed_MiaoMiao_seconds) {
         if (elapsed_MiaoMiao_seconds > MIAOMIAO_MISSING_SECONDS_THRESHOLD) {
@@ -226,39 +270,40 @@ public final class AlarmManager {
 
     public static void EvaluateSensorAlarm(Context ctx, String time, int estimate, int slope)
     {
+        // LOG call
+        /*LOG*/  Constants.AppLogDirect(10, "   EvaluateSensorAlarm(" + time + "," + String.valueOf(estimate) + " , " + String.valueOf(slope) + " )");
         //Constants.WebLog(0, "EvaluateSensorAlarm( " + String.valueOf(estimate) + " , " + String.valueOf(slope) + " )");
-        // NEW 16072019
-        Constants.AppLogDirect(0, "EvaluateSensorAlarm( " + String.valueOf(estimate) + " , " + String.valueOf(slope) + " )");
 
-        // NEW: test
+        // Reads the preferences
         ReadPreferences(ctx);
 
+        // Initialize variables
         int alarm_level = ALARM_ZERO;
+        String alarm_note = "";
+        /*LOG  Constants.AppLogDirect(0, "      Alarm set to zero"); */
 
-        Constants.AppLogDirect(0, "   Alarm set to zero");
-
+        // Define sensor trend. -1 if the value is decreasing, otherwise +1
         if (estimate < sensor_Last_Estimate)
         {
-            Constants.AppLogDirect(0, "   Estimate " + String.valueOf(estimate) + " is lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
+            Constants.AppLogDirect(0, "      Estimate " + String.valueOf(estimate) + " is lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
             sensor_Trend = -1;
 
-            // NEW: Corrects slope
+            // NEW: Corrects slope in case the sensor trend is close to zero
             if ((slope == 0) && (sensor_Trend == -1))
             {
                 slope = -1;
-
-                Constants.AppLogDirect(0, "   NEW: Slope corrected to -1 since the value is decreasing");
+                Constants.AppLogDirect(0, "      NEW: Slope corrected to -1 since the value is decreasing");
             }
         }
         else {
-            Constants.AppLogDirect(0, "   Estimate " + String.valueOf(estimate) + " is NOT lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
+            Constants.AppLogDirect(0, "      Estimate " + String.valueOf(estimate) + " is NOT lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
             sensor_Trend = +1;
         }
 
-
+        // Re-organizes the saves of the last 8 readings ans appens the new one
         if (sensor_Last_Estimate_Memory_time_check == time)
         {
-            // Double activation
+            // Double activation. Avoids overriding memories
         }
         else {
             // Save last values (add 25/06/2019)
@@ -274,62 +319,177 @@ public final class AlarmManager {
         sensor_Last_Estimate = estimate;
         sensor_Last_Slope = slope;
 
-        // Checks if the value is too low
-        if (estimate < threshold_low)
+        // Initialises time format // time format is String time = "22/05/2022 10:52";
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+        // Gets the time in date format
+        Date time_now = new Date();
+        try {
+            time_now = dateFormat.parse(time);
+        } catch (ParseException e) {
+            Constants.AppLogDirect(0, "      PROBLEM WITH TIME PARSING time: " + time);
+        }
+
+        // NEW 22/05/2022. Track the last x estimates
+        int estimate_past_15 = -1;
+        int estimate_past_30 = -1;
+        hashmap_Sensor_Readings.put(time, estimate);
+        //for (String key : hashmap_Sensor_Readings.keySet()) {
+        Iterator<Map.Entry<String,Integer>> iter = hashmap_Sensor_Readings.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<String,Integer> entry = iter.next();
+            String key = entry.getKey();
+
+            // Works in v 178 - Constants.AppLogDirect(0, "      Iteration on key: " + key);
+
+            Date time_i = new Date();
+            try {
+                time_i = dateFormat.parse(key);
+            } catch (ParseException e) {
+                Constants.AppLogDirect(20, "!!!      PROBLEM WITH TIME PARSING time: " + time);
+            }
+
+            long difference = time_now.getTime() - time_i.getTime();
+            int minutes = (int) ((difference) / (1000*60));
+
+            if (minutes >= 40) // test, should be 60
+            {
+                // Removes from hashtable if older than 1 hour
+                iter.remove(); // test: should be safe
+                // Works in v 178 - Constants.AppLogDirect(10, "      Removing from hashmap_Sensor_Reading at time: " + dateFormat.format(time_i) +
+                //        " because the difference is " + difference + " which is " + String.valueOf(minutes) + " minutes");
+            }
+            else
+            {
+                // Works in v 178 - Constants.AppLogDirect(10, "      Keeping hashmap_Sensor_Reading at time: " + dateFormat.format(time_i) + " = " + hashmap_Sensor_Readings.get(key).toString() +
+                //        " because the difference is " + difference + " which is " + String.valueOf(minutes) + " minutes");
+
+                if ((minutes >= 12) && (minutes <= 18))
+                {
+                    estimate_past_15 = hashmap_Sensor_Readings.get(key);
+                }
+                if ((minutes >= 27) && (minutes <= 33))
+                {
+                    estimate_past_30 = hashmap_Sensor_Readings.get(key);
+                }
+            }
+
+            // Works in v 178 - Constants.AppLogDirect(0, "      Iteration end: " + key);
+        }
+        Constants.AppLogDirect(10, "      estimate for 30 minutes ago is " + String.valueOf(estimate_past_30));
+        Constants.AppLogDirect(10, "      estimate for 15 minutes ago is " + String.valueOf(estimate_past_15));
+
+        // Checks if the value is too low. If inferior to threshold_low, sets the alarm to the max value.
+        if (estimate < threshold_low) // 90
         {
-            Constants.AppLogDirect(0, "   Setting alarm level to 50. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
+            Constants.AppLogDirect(10, "      *** Setting alarm level to 50. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
             //cast_alarm = true;
             alarm_level = Math.max( ALARM_MAX , alarm_level );
+            alarm_note = " LOW";
         }
         else
         {
 
         }
 
-        // In X minutes
-        float future_value_Step1 = estimate + (slope_factor_hour * ((float)slope_minutes_Step1/(float)60) * slope);
-        float future_value_Step2 = estimate + (slope_factor_hour * ((float)slope_minutes_Step2/(float)60) * slope);
+        // Calculates the estimate in 30 and 60 minutes
+        // Base version. slope_factor_hour = 60, slope_minutes_Step1 = 30
+        float future_value_Step1 = estimate + (slope_factor_hour * ((float) slope_minutes_Step1 / (float) 60) * slope);
+        float future_value_Step2 = estimate + (slope_factor_hour * ((float) slope_minutes_Step2 / (float) 60) * slope);
+        if ((estimate_past_15 == -1) || (estimate_past_30 == -1)) {
+            // Stick to the base version
+        }
+        else
+        {
+            float delta_per_minute = (float)(estimate - estimate_past_15) / (float)15;
+            // aggiunge un coefficiente peggiorativo se non vi è il valore a -30
+            // o se il delta è in aumento negativo
+            float delta_increase = delta_per_minute / 2;
+            if (estimate_past_30 != -1)
+            {
+                // Se lo abbiamo, calcola l'incremento di delta
+                float delta_per_minute_old = (float)(estimate_past_15 - estimate_past_30) / (float)15;
 
-        String log = "   Future value (step1) is " + String.valueOf(future_value_Step1);
-        Constants.AppLogDirect(0, log);
+                Constants.AppLogDirect(10, "      delta per minute old is " + String.valueOf(delta_per_minute_old));
 
-        log = "   Future value (step2) is " + String.valueOf(future_value_Step2);
-        Constants.AppLogDirect(0, log);
+                if (delta_per_minute_old < delta_per_minute) delta_increase = 0; // annulla il coefficiente peggiorativo
+            }
+            Constants.AppLogDirect(10, "      delta per minute is " + String.valueOf(delta_per_minute));
+            Constants.AppLogDirect(10, "      delta increase is " + String.valueOf(delta_increase));
+
+            float delta_per_minute_corrected = delta_per_minute + delta_increase;
+            Constants.AppLogDirect(10, "      delta per minute corrected is " + String.valueOf(delta_per_minute_corrected));
+
+            // NEW in 176 23/05/2022: TEST version 176
+            future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
+            future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
+        }
+
+        String log = "      Future value (step1) is " + String.valueOf(future_value_Step1);
+        Constants.AppLogDirect(10, log);
+
+        log = "      Future value (step2) is " + String.valueOf(future_value_Step2);
+        Constants.AppLogDirect(10, log);
 
         // Checks if the value is too low in (step1) minutes
         if (future_value_Step1 < threshold_low)
         {
             alarm_level = Math.max( ALARM_HIGH, alarm_level );
-
-            Constants.AppLogDirect(0, "   Setting alarm level to 30. Future value 1 (" + String.valueOf(future_value_Step1) + ")is < than " + String.valueOf(threshold_low));
+            Constants.AppLogDirect(10, "   Setting alarm level to 30. Future value 1 (" + String.valueOf(future_value_Step1) + ")is < than " + String.valueOf(threshold_low));
+            alarm_note = " getting LOW";
         }
         else {
             // Checks if the value is too low in (step1) minutes
             if (future_value_Step2 < threshold_low) {
                 alarm_level = Math.max(ALARM_MEDIUM, alarm_level);
-                Constants.AppLogDirect(0, "   Setting alarm level to 20 (if not higher). Future value 2 is < than " + String.valueOf(threshold_low));
+                Constants.AppLogDirect(10, "   Setting alarm level to 20 (if not higher). Future value 2 is < than " + String.valueOf(threshold_low));
+                alarm_note = " getting LOW";
+            }
+        }
+
+        // NEW 19-02-2020. Checks if falling steady
+        if (alarm_level < ALARM_HIGH)
+        {
+            int falling_steady_threshold = -20;
+            if ((sensor_Last_Estimate - sensor_Last_Estimate_Memory_2) < falling_steady_threshold)
+            {
+                // falling steady
+                alarm_level = Math.max(ALARM_HIGH, alarm_level);
+                alarm_note = " FALLING STEADY";
+
+                Constants.AppLogDirect(10, "   Setting alarm level to 30 falling steady. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
             }
         }
 
         sensor_Last_Time = System.currentTimeMillis();
 
-        Constants.AppLogDirect(0, "   EvaluateSensorAlarm with level " + String.valueOf(alarm_level));
+        Constants.AppLogDirect(0, "   (end) EvaluateSensorAlarm with level " + String.valueOf(alarm_level));
 
         if (alarm_level >= ALARM_HIGH) {
             try {
-                CreateNotification(ctx, Get_Last_Summary_Value(ctx),"Verificare valori", alarm_level);
+                String msg_notification = "Verificare valori (" + alarm_note + ")";
+
+                // log first
+                Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + String.valueOf(alarm_level));
+
+                // do after
+                CreateNotification(ctx, Get_Last_Summary_Value(ctx),msg_notification, alarm_level);
+
             } catch (Exception e) {
-                Constants.AppLogDirect(10, "   AlarmManager exception: " + e.getMessage());
+                Constants.AppLogDirect(20, "!!! AlarmManager exception: " + e.getMessage());
             }
         }
         else {
             try {
                 // BUGFIX 19/07/2019
-                CreateNotification(ctx, Get_Last_Summary_Value(ctx), "xDrip+ " + String.valueOf(estimate) + " slope " + String.valueOf(slope), alarm_level);
+                String msg_notification = "xDrip+ " + String.valueOf(estimate) + " slope " + String.valueOf(slope);
+                CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level);
+
+                Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + String.valueOf(alarm_level));
             }
             catch(Exception e)
             {
-                Constants.AppLogDirect(20,"   AlarmManager exception: " + e.getMessage());
+                Constants.AppLogDirect(20,"!!! AlarmManager exception: " + e.getMessage());
             }
         }
     }
@@ -389,7 +549,7 @@ public final class AlarmManager {
 
     public static void Build_RF_Notification(Context ctx, String risktime, int alert_level, String notes) {
         try {
-            String log = "Build_RF_Notification with risktime " + risktime + " and alert_level " + String.valueOf(alert_level);
+            String log = "         Build_RF_Notification with risktime " + risktime + " and alert_level " + String.valueOf(alert_level);
 
             Log.i(Constants.AppTAG, log);
             Constants.AppLogDirect(0, log);
@@ -425,26 +585,16 @@ public final class AlarmManager {
         {
             CreateNotification(ctx, "Exception", e.getMessage(), alert_level);
 
-            Constants.AppLogDirect(20, "AlarmManager.BuildNotification.Exception: " + e.getMessage());
+            Constants.AppLogDirect(20, "!!! AlarmManager.BuildNotification.Exception: " + e.getMessage());
         }
     }
 
-
-    public static void CreateNotification(Context ctx, String title, String message, int alert_level) {
-
-
+    public static void CreateNotification(Context ctx, String title, String message, int alert_level)
+    {
         // test. Problems of context ? we need to pass by an async task ?
-        Constants.AppLogDirect(10, "AlarmManager.CreateNotification(" + message + ", " + String.valueOf(alert_level) + ")");
+        Constants.AppLogDirect(10, "   AlarmManager.CreateNotification(" + message + ", " + String.valueOf(alert_level) + ")");
 
-        /*
-        try {
-            Constants.AppLogDirect(10, "AlarmManager.CreateNotification(" + message + ", " + String.valueOf(alert_level) + ")");
-        }
-        catch (Exception e)
-        {
-
-        }
-        */
+//        String s_log = "AlarmManager.CreateNotification(" + message + ", " + String.valueOf(alert_level) + ")";
 
         String d_msg = "";
 
@@ -454,38 +604,68 @@ public final class AlarmManager {
         long l_OneMinute = 60 * 1000;
 
 
+        // NEW 08/09/2022 SNOOZE
         try {
+            if (last_Snooze_Interval != 0)
+            {
+                int minutes_elapsed_from_last_snooze = (int) ((l_Now - last_Snooze_Time) / l_OneMinute);
+                Constants.AppLogDirect(20, String.valueOf(minutes_elapsed_from_last_snooze) + " minutes elapsed from last Snoozing");
 
+                if(minutes_elapsed_from_last_snooze < last_Snooze_Interval)
+                {
+                    Constants.AppLogDirect(20, "Snoozing. Minutes elapsed are LESS than snooze interval " + String.valueOf(last_Snooze_Interval));
+                    return;
+                }
+                else
+                {
+                    Constants.AppLogDirect(20, "No snoozing. Minutes elapsed are more than snooze interval " + String.valueOf(last_Snooze_Interval));
+                }
+            }
+            else
+            {
+                Constants.AppLogDirect(20, "Snoozing is off");
+            }
+        }
+        catch (Exception e)
+        {
+            Constants.AppLogDirect(20, "!!! CreateNotification Exception step SNOOZE " + e.getMessage());
+            d_msg = " - (D) " + e.getMessage();
+        }
 
+            try {
             // NEW 16/07/2019
             ReadPreferences(Constants.owlContext);
 
-            if (l_Now - last_Alarm_Time < l_OneMinute) {
+            // TODO: Put kill_duplicate threshold in preferences - NEW 18/11/2019
+            long l_killduplicateelapsed = kill_duplicate_interval_seconds * 1000;
+
+            // Never KILL alarm HIGH, unless inferior to one minute
+            if (((l_Now - last_Alarm_Time < l_killduplicateelapsed) && (alert_level < ALARM_HIGH)) || (l_Now - last_Alarm_Time < l_OneMinute)) {
                 int i_SecondsPassed = (int) ((l_Now - last_Alarm_Time) / 1000);
-                Constants.AppLogDirect(0, "   " + String.valueOf(i_SecondsPassed) + " passed from last notification " +
+                Constants.AppLogDirect(0, "      " + String.valueOf(i_SecondsPassed) + " passed from last notification " +
                         "- less than Threshold");
 
                 if (alert_level < last_Alarm_Level) {
-                    Constants.AppLogDirect(10, "   Killing duplicate notification - new level is "
+                    Constants.AppLogDirect(10, "      Killing duplicate notification - new level is "
                             + String.valueOf(alert_level) + " while old level is " + String.valueOf(last_Alarm_Level));
                     return;
                 } else {
                     if (alert_level == last_Alarm_Level) {
                         if (Constants.KILL_DUPLICATE) {
-                            Constants.AppLogDirect(10, "   Killing duplicate same level (KILL_DUPLICATE ON)");
+                            Constants.AppLogDirect(10, "      Killing duplicate same level (KILL_DUPLICATE ON)");
 
                             // Tracing this for test
                             message = "(D) " + message;
 
                             return;  // NEW 16/07/2019
                         } else {
-                            Constants.AppLogDirect(10, "   Not killing duplicate because is the same alert level (KILL_DUPLICATE OFF)");
+                            Constants.AppLogDirect(10, "      Not killing duplicate because is the same alert level (KILL_DUPLICATE OFF)");
 
                             // Tracing this for test
                             message = "(D) " + message;
                         }
                     } else {
-                        Constants.AppLogDirect(10, "   Not killing duplicate because alarm level superior." +
+                        Constants.AppLogDirect(10, "      Not killing duplicate because alarm level superior." +
                                 "New level is " + String.valueOf(alert_level));
 
                         // Tracing this for test
@@ -493,10 +673,14 @@ public final class AlarmManager {
                     }
                 }
             }
+            else
+            {
+                Constants.AppLogDirect(10, "      Not killing - alarm level High OR enough time elapsed");
+            }
         }
         catch (Exception e)
         {
-            Constants.AppLogDirect(20, "CreateNotification Exception step 0 " + e.getMessage());
+            Constants.AppLogDirect(20, "!!! CreateNotification Exception step 0 " + e.getMessage());
 
             d_msg = " - (D) " + e.getMessage();
         }
@@ -517,7 +701,6 @@ public final class AlarmManager {
                 s_Minute = "0" + s_Minute;
             message = "(" + s_Hour + ":" + s_Minute + ") " + message;
 
-
             AlarmManager.createNotificationChannels_if_Null(ctx);
 
             // Create an explicit intent for an Activity in your app
@@ -525,9 +708,8 @@ public final class AlarmManager {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             PendingIntent pendingIntent = PendingIntent.getActivity(ctx, 0, intent, 0);
 
-
-            // Important LOG
-            Constants.AppLogDirect(10,"   sending notification with level " + alert_level);
+            // Important LOG. UPDATED 02/06/2022 v179
+            Constants.AppLogDirect(10,"      sending notification with level " + alert_level + " and message " + message);
 
             // Creo la notifica minima
             NotificationCompat.Builder mBuilder;
@@ -545,10 +727,14 @@ public final class AlarmManager {
                         // Set the intent that will fire when the user taps the notification
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(false);
+                        //.setPriority(Notification.PRIORITY_MAX) // NEW 28-02-2020
+                        //.setSound(alarmSound_High); // NEW 28-02-2020
 
                 NotificationManagerCompat notificationManager = NotificationManagerCompat.from(ctx);
                 // notificationId is a unique int for each notification that you must define
                 notificationManager.notify(notificationId_High, mBuilder.build());
+
+                Constants.AppLogDirect(10,"   (end) notification with level " + alert_level + " sent");
             }
             else if (alert_level >= ALARM_MEDIUM) {
 
@@ -600,10 +786,17 @@ public final class AlarmManager {
                         notificationManager.notify(notificationId_Low, mBuilder.build());
                     }
                 }
+
+            // Important LOG. UPDATED 02/06/2022 v179
+            Constants.AppLogDirect(0,"   all ok till the end with alert level: " + alert_level);
+
         }
         catch(Exception e)
         {
-            Constants.AppLogDirect(20, "AlarmManager.CreateNotification.Exception: " + e.getMessage());
+            // new in 180.
+
+            Constants.AppLogDirect(20, "!!! AlarmManager.CreateNotification.Exception: " + e.getMessage());
+            Constants.AppLogDirect(20, "!!! AlarmManager.CreateNotification.Exception: " + e.getStackTrace());
         }
     }
 
@@ -649,8 +842,6 @@ public final class AlarmManager {
         */
     }
 
-
-
     public static void ReadForecast(Context ctx) {
 
         // DEVELOPER DEBUG
@@ -663,11 +854,15 @@ public final class AlarmManager {
 
         Log.i(Constants.AppTAG, "ReadForecast() called");
 
-        BackgroundJson Task= new BackgroundJson("", "", "",  new JSONObject());
+        //BackgroundJson Task= new BackgroundJson("", "", "",  new JSONObject());
+        BackgroundJson Task= new BackgroundJson("", "", "");
         try {
-            JSONObject j = Task.execute().get();
+            // TODO: cambiare secondo indicazioni Marco. Test 25/07/2019
+            // JSONObject j = Task.execute().get();
+            //Check_Response(ctx, j);
 
-            Check_Response(ctx, j);
+            Task.execute();
+
         } catch (Exception e) {
             Log.e(Constants.AppTAG, e.getMessage());
             e.printStackTrace();
@@ -677,14 +872,20 @@ public final class AlarmManager {
     }
 
     // Here it checks the response from JSON
+    // TODO: Check. Test 25/07/2019
+    public static void Check_Response(JSONObject j)    {
+        Check_Response(Constants.owlContext, j);
+    }
+
+    // Here it checks the response from JSON
     public static void Check_Response(Context ctx, JSONObject j)    {
 
         // DEVELOPER DEBUG
-        Constants.AppLog(0,"Check_Response called", ctx);
+        Constants.AppLogDirect(0,"      Check_Response called");
 
         if (j == null) {
             CHECKRESPONSE_null_times++;
-            Constants.AppLogDirect(10, "CheckResponse called with null jSon. CHECKRESPONSE_null_times " + String.valueOf(CHECKRESPONSE_null_times));
+            Constants.AppLogDirect(10, "!!! CheckResponse called with null jSon. CHECKRESPONSE_null_times " + String.valueOf(CHECKRESPONSE_null_times));
 
             if (CHECKRESPONSE_null_times <= CHECKRESPONSE_null_THRESHOLD)
                 Constants.AppLogDirect(10, "   return;");
@@ -692,7 +893,7 @@ public final class AlarmManager {
         }
         else {
             CHECKRESPONSE_null_times = 0;
-            Constants.AppLogDirect(10, "CheckResponse called with Json NOT null - CHECKRESPONSE_null_times = 0");
+            Constants.AppLogDirect(10, "         CheckResponse called with Json NOT null - CHECKRESPONSE_null_times = 0");
         }
 
         int alert_level = ALARM_ZERO;
@@ -724,7 +925,7 @@ public final class AlarmManager {
 
             // DEBUG
             try {
-                Constants.AppLog(0, "   Reading JSON FORECAST with length " + String.valueOf(ja.length()), ctx);
+                Constants.AppLog(0, "         Reading JSON FORECAST with length " + String.valueOf(ja.length()), ctx);
             }
             catch(Exception e)
             {}
@@ -740,7 +941,7 @@ public final class AlarmManager {
 
                 // DEBUG
                 try {
-                    Constants.AppLog(0, "   lAST ESTIMATE IS " + String.valueOf(sensor_Last_Estimate) +
+                    Constants.AppLog(0, "         LAST ESTIMATE IS " + String.valueOf(sensor_Last_Estimate) +
                             " therefore using THRESHOLD_DELTA = " + String.valueOf(THRESHOLD_DELTA), ctx);
                     //Constants.AppLog(0, "   Alert level delta is " + String.valueOf(alert_level_delta), ctx);
                 }
@@ -754,6 +955,8 @@ public final class AlarmManager {
 
             for (int i = 0; i < ja.length(); i++)
             {
+
+                // TODO: tramutare queste letture in array
 
                 JSONObject jo = ja.getJSONObject(i);
 
@@ -824,7 +1027,7 @@ public final class AlarmManager {
 
                     // DEBUG
                     try {
-                        Constants.AppLog(0, "      Delta is " + String.valueOf(delta), ctx);
+                        //Constants.AppLog(0, "      Delta is " + String.valueOf(delta), ctx);
                     }
                     catch(Exception e)
                     {}
@@ -882,8 +1085,8 @@ public final class AlarmManager {
 
                 int delta_for_rise_alarm = (sensor_Last_Estimate - sensor_Last_Estimate_Memory_5);
 
-                Constants.AppLog(0,"Delta for rise is " + String.valueOf(delta_for_rise_alarm)
-                        + "Setup: max bolo rate is " + String.valueOf(rate_bolo_max), ctx);
+                Constants.AppLog(0,"         Delta for rise is " + String.valueOf(delta_for_rise_alarm)
+                        + ". Setup: max bolo rate is " + String.valueOf(rate_bolo_max), ctx);
 
                 if (delta_for_rise_alarm > THRESHOLD_DELTA_UP_FOR_BOLUS) {
                     // estimate rising
@@ -903,14 +1106,14 @@ public final class AlarmManager {
             else
             {
                 // SETUP phase
-                Constants.AppLog(0,"Setup: max bolo rate is " + String.valueOf(rate_bolo_max), ctx);
+                Constants.AppLog(0,"         Setup: max bolo rate is " + String.valueOf(rate_bolo_max), ctx);
             }
 
 
 
             // DEBUG
             try {
-                Constants.AppLog(0, "   Alert level is " + String.valueOf(alert_level) + " with risktime = " + risktime +
+                Constants.AppLog(0, "         Alert level is " + String.valueOf(alert_level) + " with risktime = " + risktime +
                         " and alert_type = " + String.valueOf(alert_type), ctx);
                 //Constants.AppLog(0, "   Alert level delta is " + String.valueOf(alert_level_delta), ctx);
             }
@@ -943,7 +1146,6 @@ public final class AlarmManager {
             CreateNotification(ctx, "CheckResponse Exception", e.getMessage(), 30);
         }
     }
-
 
     public static void Notify_Service_Elapsed(Context ctx)    {
 
@@ -1040,12 +1242,10 @@ public final class AlarmManager {
         }
         catch (Exception e) {
             e.printStackTrace();
-            Constants.AppLogDirect(20, "AlarmManager.exists("+URLName+") Exception: " + e.getMessage());
+            Constants.AppLogDirect(20, "!!! AlarmManager.exists("+URLName+") Exception: " + e.getMessage());
             return false;
         }
     }
-
-
 
     public static void Alive(Context ctx)    {
         String msg = "(service alive) - last MiaoMiao = " + String.valueOf((int)elapsed_MiaoMiao_seconds) + " s - d(" + String.valueOf(Constants.WEB_DEBUG_LEVEL) + ")";
@@ -1057,7 +1257,7 @@ public final class AlarmManager {
 
     public static void ReadPreferences(Context ctx)    {
 
-        Constants.AppLogDirect(0, "ReadPreferences called");
+        //Constants.AppLogDirect(0, "ReadPreferences called");
 
         try {
             SharedPreferences sharedPref =
@@ -1073,7 +1273,11 @@ public final class AlarmManager {
             String kd = sharedPref.getString("kill_duplicate", "false");
             Constants.KILL_DUPLICATE = Boolean.parseBoolean(kd);
 
-            Constants.AppLogDirect(0, "KILL_DUPLICATE set to " + String.valueOf(Constants.KILL_DUPLICATE));
+            String kill_duplicate_interval_minutes = sharedPref.getString("kill_duplicate_interval", "60");
+            kill_duplicate_interval_seconds = Integer.parseInt(kill_duplicate_interval_minutes) * 60;
+            Log.i(Constants.AppTAG, "PREFERENCE: kill_duplicate_interval_seconds set to " + kill_duplicate_interval_minutes + " minutes");
+
+            Constants.AppLogDirect(10, "      KILL_DUPLICATE set to " + String.valueOf(Constants.KILL_DUPLICATE));
 
             Log.i(Constants.AppTAG, "PREFERENCE: Web debug level set to " + String.valueOf(Constants.WEB_DEBUG_LEVEL));
         }
@@ -1082,6 +1286,4 @@ public final class AlarmManager {
             Log.e(Constants.AppTAG, "Exception: " + e.getMessage());
         }
     }
-
-
 }

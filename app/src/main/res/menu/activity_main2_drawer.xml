@@ -13,9 +13,35 @@
             android:id="@+id/nav_update"
             android:icon="@drawable/ic_update"
             android:title="Update" />
+    </group>
 
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/send_logs_by_mail"
+            android:icon="@drawable/ic_receipt"
+            android:title="SEND LOGS BY MAIL" />
+    </group>
 
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_snooze_0"
+            android:icon="@drawable/ic_notify_high"
+            android:title="NOTIFY ON" />
 
+        <item
+            android:id="@+id/nav_snooze_15"
+            android:icon="@drawable/ic_notification_off"
+            android:title="SNOOZE 15" />
+
+        <item
+            android:id="@+id/nav_snooze_30"
+            android:icon="@drawable/ic_notification_off"
+            android:title="SNOOZE 30" />
+
+        <item
+            android:id="@+id/nav_snooze_60"
+            android:icon="@drawable/ic_notification_off"
+            android:title="SNOOZE 60" />
     </group>
 
     <item android:title="Sviluppo">

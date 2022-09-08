@@ -37,20 +37,25 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
     String bg_Slope;
     String s_Time;
 
+    //AlarmManager alarm_manager;
+
     int minutes_forward = 5;
 
-    public BackgroundJson(String a, String b, String t, JSONObject j)
+    // TODO: Test. 25/07/2019. Removed JSONObject
+    public BackgroundJson(String a, String b, String t)
     {
         bg_Estimate = a;
         bg_Slope = b;
         s_Time = t;
+
+        //alarm_manager = am;  // NEW
     }
 
     @Override
     protected JSONObject doInBackground(String... params) {
 
         Log.i(Constants.AppTAG, "Background Task called");
-        Constants.AppLogDirect(0,"JSONObject.Background Task called");
+        Constants.AppLogDirect(0,"   JSONObject.Background Task called");
 
         String resp = "";
 
@@ -94,21 +99,32 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
                 postDataParams.put("numberOfValues", n);
             } else {
 
-                // NEW: Trying to insert all values
-                //SimpleDateFormat formatter_Y = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                // NEW in 176: Trying to insert all values -  NEW 23/05/2022
+                SimpleDateFormat formatter_DATE = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                // Gets the time in a long
+                long time = Long.parseLong(s_Time);
+                // Adds minutes forward in milliseconds
+                time = time + (minutes_forward / 60 / 1000);
+                // Converts into a date
+                Date d = new Date(time);
+
+                // Formats date for inserts
                 SimpleDateFormat formatter_Y = new SimpleDateFormat("yyyy");
-                String year = formatter_Y.format(new Date(Long.parseLong(s_Time)));
+                String year = formatter_Y.format(d);
                 SimpleDateFormat formatter_M = new SimpleDateFormat("MM");
-                String month = formatter_M.format(new Date(Long.parseLong(s_Time)));
+                String month = formatter_M.format(d);
                 SimpleDateFormat formatter_D = new SimpleDateFormat("dd");
-                String day = formatter_D.format(new Date(Long.parseLong(s_Time)));
+                String day = formatter_D.format(d);
                 SimpleDateFormat formatter_HH = new SimpleDateFormat("HH");
-                String HH = formatter_HH.format(new Date(Long.parseLong(s_Time)));
+                String HH = formatter_HH.format(d);
                 SimpleDateFormat formatter_MM = new SimpleDateFormat("mm");
-                String mm = formatter_MM.format(new Date(Long.parseLong(s_Time)));
-                int i_mm = Integer.parseInt(mm) + minutes_forward;
-                if (i_mm > 60) i_mm = i_mm - 60;
-                mm = String.valueOf(i_mm);
+                String mm = formatter_MM.format(d);
+                /*int i_mm = Integer.parseInt(mm) + minutes_forward;
+                if (i_mm > 60)
+                {
+                    i_mm = i_mm - 60;
+                    mm = String.valueOf(i_mm);
+                }*/ // ERROR: doesn't work, when minutes close to 60
 
                 postDataParams.put("APIKey", "MadWrite");
                 postDataParams.put("function", "insert_BGESTIMATE_BGSLOPE");
@@ -139,12 +155,15 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
         catch (Exception e) {
             e.printStackTrace();
 
-            String msg = "BackgroundJson Exception: " + e.getMessage();
+            String msg = "BackgroundJson Exception 1: " + e.getMessage();
             Log.e(Constants.AppTAG, msg);
             Constants.AppLogDirect(10,msg);
         }
 
         Log.i(Constants.AppTAG, "   Background JSON - check 002");
+
+        Constants.AppLogDirect(0,"      preparing to write this JSON Object " + postDataParams.toString());
+
 
         try {
 
@@ -154,7 +173,7 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
             writer.write(getPostDataString(postDataParams));
 
             Log.i(Constants.AppTAG, "   preparing to write " + getPostDataString(postDataParams));
-            Constants.AppLogDirect(0,"   preparing to write " + getPostDataString(postDataParams));
+            Constants.AppLogDirect(0,"      preparing to write " + getPostDataString(postDataParams));
 
             writer.flush();
             writer.close();
@@ -166,8 +185,8 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
 
             if (responseCode == HttpsURLConnection.HTTP_OK) {
 
-                Log.i(Constants.AppTAG, "   response ok ");
-                Constants.AppLogDirect(0,"   response ok ");
+                Log.i(Constants.AppTAG, "      response ok ");
+                Constants.AppLogDirect(0,"      response ok ");
 
                 BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuilder total = new StringBuilder();
@@ -186,12 +205,13 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
         catch (Exception e) {
             e.printStackTrace();
 
-            String msg = "BackgroundJson Exception: " + e.getMessage();
+            String msg = "!!!   BackgroundJson Exception 2: " + e.getMessage();
             Log.e(Constants.AppTAG, msg);
-            Constants.AppLogDirect(10,msg);
+            Constants.AppLogDirect(20 ,msg);
         }
 
         Log.i(Constants.AppTAG, "   Background JSON - check 003 - " + resp);
+        Constants.AppLogDirect(0, "      Background JSON - check 003 - " + resp); // New in 177
 
         try
         {
@@ -202,18 +222,18 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
                 jObj = ja.getJSONObject(0);
             } catch (JSONException e) {
                 Log.e(Constants.AppTAG, "Error parsing data " + e.toString());
-                Constants.AppLogDirect(9, "Error parsing data " + e.toString());
+                Constants.AppLogDirect(20, "!!! Error parsing data " + e.toString());
             }
 
-            Log.i(Constants.AppTAG, "Parsing OK");
-            Constants.AppLogDirect(9, "Parsing OK");
+            Log.i(Constants.AppTAG, "      Parsing OK");
+            Constants.AppLogDirect(9, "      Parsing OK");
 
             // return JSON String
             return jObj;
         } catch (Exception e) {
-            String msg = "BackgroundJson Exception: " + e.getMessage();
+            String msg = "!!!   BackgroundJson Exception 3: " + e.getMessage();
             Log.e(Constants.AppTAG, msg);
-            Constants.AppLogDirect(10,msg);
+            Constants.AppLogDirect(20,msg);
         }
 
         Constants.AppLogDirect(0,"JSONObject.Background Task ended");
@@ -246,4 +266,11 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
         return result.toString();
     }
 
+
+    @Override
+    protected void onPostExecute(JSONObject jsonObject) {
+        super.onPostExecute(jsonObject);
+
+        AlarmManager.Check_Response(jsonObject);
+    }
 }

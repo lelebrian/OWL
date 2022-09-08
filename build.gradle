@@ -7,7 +7,10 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.0'
+        //noinspection GradlePluginVersion
+        // NEW TEST 05/08/2022
+        // classpath 'com.android.tools.build:gradle:3.6.3' // Minimum supported Gradle version is 4.6.
+        classpath 'com.android.tools.build:gradle:7.2.1'
         
 
         // NOTE: Do not place your application dependencies here; they belong

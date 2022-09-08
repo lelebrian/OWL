@@ -4,6 +4,9 @@ import android.app.AlarmManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.os.Environment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -13,15 +16,21 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 public final class Constants {
+
+    // TODO. Delete this, may use RAM
+    private static String text_logs_collection;
 
     // turn on to write Web Log, off for faster app
     private static boolean WEBLOG_GLOBAL_ON = false;
@@ -172,14 +181,18 @@ public final class Constants {
         if (level >= 20)
         {
             logToFile(level, message, "exceptions");  // only important logs
+            logToFile(level, message, "10");  // only important logs
+            logToFile(level, message, "0"); // all logs
         }
         else if (level >= 10)
         {
             logToFile(level, message, "10");  // only important logs
+            logToFile(level, message, "0"); // all logs
         }
-
-        // in any case
-        logToFile(level, message, "0"); // all logs
+        else // in any case
+        {
+            logToFile(level, message, "0"); // all logs
+        }
     }
 
     /// ***
@@ -196,6 +209,109 @@ public final class Constants {
     }
 
 
+    public static void write_Exception_Log_To_Mail(String log)
+    {
+        text_logs_collection += "\r\n" + log;
+    }
+
+    // NEW 08/09/2022
+    // TODO: TEST. Add sending of file attachments
+    public static void send_log_by_mail(Context ctx) {
+
+        Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        // set the type to 'email'
+        emailIntent.setType("vnd.android.cursor.dir/email");
+        String to[] = {"emanuele.briano@gmail.com"};
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+        // the mail subject
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Owl logs");
+        String s_text = text_logs_collection;
+        emailIntent.putExtra(Intent.EXTRA_TEXT, s_text);
+
+        // Tries to retrieve attachments
+        /*
+        try {
+            String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
+            File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                    "OWL_LOGS");
+            if (directory.exists() && directory.isDirectory()) {
+                final Pattern p = Pattern.compile(currentDateString + "*.*");
+                File[] flists = directory.listFiles(new FileFilter() {
+                    @Override
+                    public boolean accept(File file) {
+                        return p.matcher(file.getName()).matches();
+                    }
+                });
+
+                // Converts file list in arraylist of Uri
+                ArrayList<Uri> urilist = new ArrayList<Uri>();
+                for (File f : flists)
+                {
+                    Uri path = Uri.fromFile(f);
+                    urilist.add(path);
+                }
+
+                emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, urilist);
+            }
+        }
+        catch (Exception e)
+        {
+            write_Exception_Log_To_Mail(e.getMessage());
+        }
+        */
+
+        try {
+            ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
+
+            // Empties the variable
+            text_logs_collection = "";
+        }
+        catch (Exception e)
+        {
+            logToFile(30, e.getMessage(), "Exception");
+        }
+    }
+
+    // NEW 08/09/2022
+    // TODO: TEST
+    public static void send_log_files_by_mail(Context ctx) {
+//
+//        try {
+//            Log.d(Constants.AppTAG, "sendLogs()");
+//
+//            String owl_Name = "OWL_logs";
+//            File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
+//            if (!directory.exists()) {
+//                Log.e(Constants.AppTAG, "WARNING! Directory does not exists !!!!");
+//            }
+//            else {
+//                Log.d(Constants.AppTAG, directory.getAbsolutePath() + " exists");
+//            }
+//            String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
+//            String currentTimeString = new SimpleDateFormat("HH:mm").format(new Date());
+//            String filename_1 = currentDateString + "_" + 20 + ".txt";
+//            String filename_2 = currentDateString + "_" + 10 + ".txt";
+//            String filename_3 = currentDateString + "_" + 10 + ".txt";
+//
+//            File filelocation_1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), filename_1);
+//            Uri path_1 = Uri.fromFile(filelocation_1);
+//            Intent emailIntent = new Intent(Intent.ACTION_SEND);
+//            // set the type to 'email'
+//            emailIntent.setType("vnd.android.cursor.dir/email");
+//            String to[] = {"emanuele.briano@gmail.com"};
+//            emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+//            // the attachment
+//            emailIntent.putExtra(Intent.EXTRA_STREAM, path_1);
+//            // the mail subject
+//            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Owl logs");
+//            ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
+//        }
+//        catch (Exception e) {
+//            Log.e("Exception", "File write failed: " + e.toString());
+//        }
+    }
+
+
     /// ***
     /// Logs to txt file in phone
     /// ***
@@ -203,10 +319,20 @@ public final class Constants {
 
         String owl_Name = "OWL_logs";
 
+        // TODO: TEST
+        // NEW 08/09/2022. Writes in variable to be able to email it later
+        if (level >= 20) {
+            write_Exception_Log_To_Mail(data);
+        }
+
         try {
             Log.d(Constants.AppTAG, "writeToFile()");
 
-            File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
+            // OLD working
+            //File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
+            File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+            //File directory = new File(owlContext.getExternalFilesDir("") + File.separator + owl_Name);
+
             if(!directory.exists())
             {
                 directory.mkdir();
@@ -222,6 +348,8 @@ public final class Constants {
             }
             String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
             String currentTimeString = new SimpleDateFormat("HH:mm").format(new Date());
+
+            // TODO: copiare anche in level name inferiori (20 -> 10 -> 0)
             String filename = currentDateString + "_" + level_name + ".txt";
             File newFile = new File(directory, filename);
             if(!newFile.exists()){
@@ -232,12 +360,13 @@ public final class Constants {
                     Log.d(Constants.AppTAG,"Created file " + filename);
                 } catch (IOException e) {
                     Log.e(Constants.AppTAG,e.getMessage());
+
+                    write_Exception_Log_To_Mail("File write failed: " + e.toString());
                 }
             }
             else
             {
                 Log.i(Constants.AppTAG, "new file exists");
-
             }
 
             try  {
@@ -252,10 +381,14 @@ public final class Constants {
 
             }catch (Exception e){
                 Log.e(Constants.AppTAG, e.getMessage());
+
+                write_Exception_Log_To_Mail("File write failed: " + e.toString());
             }
         }
         catch (Exception e) {
             Log.e("Exception", "File write failed: " + e.toString());
+
+            write_Exception_Log_To_Mail("File write failed: " + e.toString());
         }
     }
 

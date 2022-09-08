@@ -25,4 +25,12 @@
         android:summary=""
         android:title="Kill duplicate" />
 
+    <ListPreference
+        android:defaultValue="1"
+        android:entries="@array/killduplicateintervals"
+        android:entryValues="@array/killduplicateintervals"
+        android:key="kill_duplicate_interval"
+        android:summary="(minutes)"
+        android:title="Kill if elapsed less than" />
+
 </PreferenceScreen>

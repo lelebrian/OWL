@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity
         if (Constants.IsFirstLaunch()) {
             // ADD FIRST LAUNCH CODE HERE
             Constants.Initialise(version);
-            Constants.AppLogDirect(10, "Created new OWL MainActivity version " + version
+            Constants.AppLogDirect(20, "Created new OWL MainActivity version " + version
                     + " randomID " + String.valueOf(Constants.randomID));
         }
 
@@ -673,6 +673,32 @@ public class MainActivity extends AppCompatActivity
                 }
             }
             */
+        } else if (id == R.id.send_logs_by_mail) {
+            Constants.send_log_by_mail(this);
+        } else if (id == R.id.nav_snooze_0) {
+
+            Constants.AppLogDirect(0, "Snooze 0 pressed");
+
+            // Sets the snooze
+            AlarmManager.setSnooze(0);
+        } else if (id == R.id.nav_snooze_15) {
+
+            Constants.AppLogDirect(0, "Snooze 30 pressed");
+
+            // Sets the snooze
+            AlarmManager.setSnooze(15);
+        } else if (id == R.id.nav_snooze_30) {
+
+            Constants.AppLogDirect(0, "Snooze 30 pressed");
+
+            // Sets the snooze
+            AlarmManager.setSnooze(30);
+        } else if (id == R.id.nav_snooze_60) {
+
+            Constants.AppLogDirect(0, "Snooze 60 pressed");
+
+            // Sets the snooze
+            AlarmManager.setSnooze(60);
         } else if (id == R.id.nav_test_alarm) {
 
             Constants.AppLogDirect(0, "Testing Alarm");
