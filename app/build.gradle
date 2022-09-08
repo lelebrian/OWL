@@ -7,9 +7,11 @@ android {
         minSdkVersion 30
         targetSdkVersion 30
 
-        versionCode 189
-        versionName "189"
+        versionCode 192
+        versionName "192"
 
+        // new in 191. Fixed Snooze left notification by adding a timer
+        // new in 190. Test to put Snooze Left in the menu
         // new in 189. logToFile_Worker works again
         // new in 188. Refactor to AndroidX. Updated return Result.failure(); in workers // NEW 08/09/2022
         // new in 186. Write in public folder Documents. Tests to send email with log. Test of Snoozing of alarms

@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -48,8 +49,6 @@ public class MainActivity extends AppCompatActivity
 
     Intent mServiceIntent;
 
-
-
     private DrawerLayout mDrawerLayout;
 
     WebView myWebView;
@@ -59,7 +58,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         Log.i(Constants.AppTAG, "Creating MainActivity()");
 
         Constants.owlContext = getApplicationContext();
@@ -68,9 +66,7 @@ public class MainActivity extends AppCompatActivity
         Log.i(Constants.AppTAG, "Creating MainActivity() step 10");
 
         setContentView(R.layout.activity_main2);
-
         Log.i(Constants.AppTAG, "Creating MainActivity() step 20");
-
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -206,7 +202,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-
     public void Load_Mad() {
         String url = getString(R.string.mad_url);
 
@@ -286,28 +281,9 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     Log.e(Constants.AppTAG, "MainActivity: duplicate AppLog message");
                 }
-
-
-
-/*
-                synchronized(mRecyclerView){
-                    mAdapter = new MyAdapter(Constants.Get_AppLog());
-                    mRecyclerView.setAdapter(mAdapter);
-                    //mRecyclerView.notify();
-                }
-                */
-
             } catch (Exception e) {
                 Constants.Clear_Logs();
                 Constants.Add_AppLog(e.getMessage());
-
-                /*
-                synchronized(mRecyclerView){
-                    mAdapter = new MyAdapter(Constants.Get_AppLog());
-                    mRecyclerView.setAdapter(mAdapter);
-                    //mRecyclerView.notify();
-                }
-                */
 
                 Log.e(Constants.AppTAG, "Exception: " + e.getMessage());
             }
@@ -373,6 +349,7 @@ public class MainActivity extends AppCompatActivity
         switch (item.getItemId()) {
             case android.R.id.home:
                 mDrawerLayout.openDrawer(GravityCompat.START);
+
                 return true;
             case R.id.action_settings:
                 Log.i(Constants.AppTAG, "Action settings identified()");
@@ -407,12 +384,47 @@ public class MainActivity extends AppCompatActivity
         // Inflate the menu; this adds items to the action bar if it is present.
         //getMenuInflater().inflate(R.menu.main2, menu);
 
-        // old
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
         return true;
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // Refresh the menu, especially the Snooze minutes left
+        Constants.AppLogDirect(20, "On Prepare Options Menu");
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        MenuItem item = navigationView.getMenu().findItem(R.id.nav_snooze_0);
+
+        if (item != null) {
+            int left = AlarmManager.get_Snooze_Left();
+            if (left < 0) {
+                item.setTitle("NOTIFY");
+            } else {
+                item.setTitle("NOTIFY (" + String.valueOf(left) + ")");
+            }
+        }
+        else
+        {
+            Constants.AppLogDirect(20, "nav_snooze_0 not found in menu");
+            Constants.AppLogDirect(20, "Item 0 is " + menu.getItem(0).getItemId());
+        }
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    public void UpdateSnoozeButton()
+    {
+        try
+        {
+            invalidateOptionsMenu();
+        }
+        catch(Exception e)
+        {
+            Constants.write_Exception_Log_To_Mail(e.getMessage());
+        }
+    }
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
@@ -420,7 +432,7 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        Log.i(Constants.AppTAG, "onNavigationItemSelected id = '" + id + "'");
+        Constants.AppLogDirect(0, "onNavigationItemSelected id = '" + id + "'");
 
         if (id == R.id.nav_mad) {
             Load_Mad();
@@ -451,29 +463,72 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.send_logs_by_mail) {
             Constants.send_log_by_mail(this);
         } else if (id == R.id.nav_snooze_0) {
-
             Constants.AppLogDirect(0, "Snooze 0 pressed");
 
             // Sets the snooze
             AlarmManager.setSnooze(0);
+
+            UpdateSnoozeButton();
         } else if (id == R.id.nav_snooze_15) {
 
             Constants.AppLogDirect(0, "Snooze 30 pressed");
 
             // Sets the snooze
             AlarmManager.setSnooze(15);
+
+            UpdateSnoozeButton();
+
+            new CountDownTimer(15*60*1000, 60*1000) {
+
+                public void onTick(long millisUntilFinished) {
+                    UpdateSnoozeButton();
+                }
+
+                public void onFinish() {
+                    UpdateSnoozeButton();
+                }
+
+            }.start();
         } else if (id == R.id.nav_snooze_30) {
 
             Constants.AppLogDirect(0, "Snooze 30 pressed");
 
             // Sets the snooze
             AlarmManager.setSnooze(30);
+
+            UpdateSnoozeButton();
+
+            new CountDownTimer(30*60*1000, 60*1000) {
+
+                public void onTick(long millisUntilFinished) {
+                    UpdateSnoozeButton();
+                }
+
+                public void onFinish() {
+                    UpdateSnoozeButton();
+                }
+
+            }.start();
         } else if (id == R.id.nav_snooze_60) {
 
             Constants.AppLogDirect(0, "Snooze 60 pressed");
 
             // Sets the snooze
             AlarmManager.setSnooze(60);
+
+            UpdateSnoozeButton();
+
+            new CountDownTimer(60*60*1000, 60*1000) {
+
+                public void onTick(long millisUntilFinished) {
+                    UpdateSnoozeButton();
+                }
+
+                public void onFinish() {
+                    UpdateSnoozeButton();
+                }
+
+            }.start();
         } else if (id == R.id.nav_test_alarm) {
 
             Constants.AppLogDirect(0, "Testing Alarm");
@@ -563,8 +618,5 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    public void UpdateSnoozeButton()
-    {
 
-    }
 }

@@ -171,14 +171,14 @@ public final class Constants {
         //Writes 1 or 2 files - more levels of detail
         if (level >= 20)
         {
-            logToFile(level, message, "exceptions");  // only important logs
-            logToFile(level, message, "10");  // only important logs
-            logToFile(level, message, "0"); // all logs
+            logToFile(20, message, "exceptions");  // only important logs
+            logToFile(10, message, "10");  // only important logs
+            logToFile(0, message, "0"); // all logs
         }
         else if (level >= 10)
         {
-            logToFile(level, message, "10");  // only important logs
-            logToFile(level, message, "0"); // all logs
+            logToFile(10, message, "10");  // only important logs
+            logToFile(0, message, "0"); // all logs
         }
         else // in any case
         {
@@ -313,7 +313,7 @@ public final class Constants {
         // TODO: TEST
         // NEW 08/09/2022. Writes in variable to be able to email it later
         if (level >= 20) {
-            write_Exception_Log_To_Mail(data);
+            write_Exception_Log_To_Mail(String.valueOf(level) + ": " + data);
         }
 
         try {

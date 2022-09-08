@@ -3,7 +3,11 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Documenti_Lele/AndroidStudioProjects/OWL/app/src/main/res/layout/activity_main.xml" value="0.14945652173913043" />
+        <entry key="..\:/Documenti_Lele/AndroidStudioProjects/OWL/app/src/main/res/layout/activity_main2.xml" value="0.14945652173913043" />
         <entry key="..\:/Documenti_Lele/AndroidStudioProjects/OWL/app/src/main/res/menu/activity_main2_drawer.xml" value="0.33" />
+        <entry key="..\:/Documenti_Lele/AndroidStudioProjects/OWL/app/src/main/res/menu/drawer_menu.xml" value="0.225" />
+        <entry key="..\:/Documenti_Lele/AndroidStudioProjects/OWL/app/src/main/res/menu/menu_main.xml" value="0.225" />
       </map>
     </option>
   </component>

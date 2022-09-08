@@ -149,6 +149,24 @@ public final class AlarmManager {
         last_Snooze_Interval = interval;
     }
 
+    public static int get_Snooze_Left()
+    {
+        if (last_Snooze_Interval != 0)
+        {
+            long l_Now = System.currentTimeMillis();
+            long l_OneMinute = 60 * 1000;
+
+            int minutes_elapsed_from_last_snooze = (int) ((l_Now - last_Snooze_Time) / l_OneMinute);
+            int left = (int) last_Snooze_Interval - minutes_elapsed_from_last_snooze;
+
+            return left;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
     private static void createNotificationChannel_Low(Context ctx) {
         try {
             // Create the NotificationChannel, but only on API 26+ because
