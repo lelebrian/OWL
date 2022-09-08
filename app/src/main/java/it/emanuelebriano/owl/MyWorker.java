@@ -2,17 +2,13 @@ package it.emanuelebriano.owl;
 
 import android.content.Context;
 import android.content.IntentFilter;
-import android.provider.SyncStateContract;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
 import android.util.Log;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import androidx.work.Worker;
@@ -55,7 +51,7 @@ public class MyWorker extends Worker {
                     Constants.logToFile_Worker(10, log_message);
                     Constants.logToFile_Worker(2,  "   !!!   Registering broadcast receiver, Exception: "
                             + e.getMessage());
-                    return Result.FAILURE;
+                    return Result.failure();  // NEW 08/09/2022
                 }
             }
             else {
@@ -76,7 +72,7 @@ public class MyWorker extends Worker {
             Log.e( Constants.AppTAG, e.getMessage());
             Constants.logToFile_Worker(10, log_message);
             Constants.logToFile_Worker(10, "   !!!   " + e.getMessage());
-            return Result.FAILURE;
+            return Result.failure();  // NEW 08/09/2022
         }
 
         try
@@ -104,11 +100,11 @@ public class MyWorker extends Worker {
             Constants.logToFile_Worker(10, "   !!!   Exception listing workers: " + e.getMessage());
 
             // Exception in this part should not be crucial
-            return Result.SUCCESS;
+            return Result.success();  // NEW 08/09/2022
         }
 
         Constants.logToFile_Worker(10, log_message);
-        return Result.SUCCESS;
+        return Result.success();  // NEW 08/09/2022
     }
 
 }

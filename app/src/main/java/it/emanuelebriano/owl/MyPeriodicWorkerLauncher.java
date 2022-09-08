@@ -1,26 +1,20 @@
 package it.emanuelebriano.owl;
 
 import android.content.Context;
-import android.content.IntentFilter;
-import android.content.PeriodicSync;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
 import android.util.Log;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
-
-import static java.lang.System.currentTimeMillis;
 
 //http://www.zoftino.com/scheduling-tasks-with-workmanager-in-android
 
@@ -84,7 +78,7 @@ public class MyPeriodicWorkerLauncher extends Worker {
             Constants.logToFile_Worker(10, "Exception scheduling new MyWorker: " + e.getMessage());
         }
 
-        return Result.SUCCESS;
+        return Result.success();  // NEW 08/09/2022
     }
 
 }

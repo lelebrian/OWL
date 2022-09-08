@@ -1,31 +1,22 @@
 package it.emanuelebriano.owl;
 
-import android.app.AlarmManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.net.Uri;
 import android.os.Environment;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Random;
-import java.util.regex.Pattern;
 
 public final class Constants {
 
@@ -399,11 +390,10 @@ public final class Constants {
         try {
             //Log.d(Constants.AppTAG, "writeToFile()");
 
-            File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "OWL_logs");
+            File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
             if(!directory.exists())
             {
                 directory.mkdir();
-//                Log.d(Constants.AppTAG,"Created " + directory.getAbsolutePath());
                 if(!directory.exists())
                 {
                     Log.e(Constants.AppTAG,"WARNING! Directory does not exists !!!! Creation problems");
@@ -411,7 +401,6 @@ public final class Constants {
             }
             else
             {
-                //Log.d(Constants.AppTAG,directory.getAbsolutePath() + " exists");
             }
             String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
             String currentTimeString = new SimpleDateFormat("HH:mm").format(new Date());
@@ -443,9 +432,11 @@ public final class Constants {
 
             }catch (Exception e){
                 Log.e(Constants.AppTAG, e.getMessage());
+                write_Exception_Log_To_Mail(e.getMessage());
             }
         }
         catch (Exception e) {
+            write_Exception_Log_To_Mail(e.getMessage());
             Log.e("Exception", "File write failed: " + e.toString());
         }
     }

@@ -4,21 +4,12 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import android.util.Log;
-import android.widget.Toast;
-
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-import it.emanuelebriano.owl.Constants;
 
 import static android.content.Context.DOWNLOAD_SERVICE;
 

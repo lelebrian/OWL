@@ -1,15 +1,10 @@
 package it.emanuelebriano.owl;
 
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.preference.PreferenceFragmentCompat;
+import androidx.fragment.app.Fragment;
+import androidx.preference.PreferenceFragmentCompat;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 
 /**
  * A simple {@link Fragment} subclass.

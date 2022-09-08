@@ -1,10 +1,8 @@
 package it.emanuelebriano.owl;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -16,11 +14,11 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.preference.PreferenceManager;
-import android.provider.SyncStateContract;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
-import android.widget.Toast;
+import android.view.View;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -28,7 +26,6 @@ import org.json.JSONObject;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,7 +34,6 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
-import static android.app.Notification.PRIORITY_HIGH;
 import static android.app.Notification.VISIBILITY_PUBLIC;
 
 // https://stackoverflow.com/questions/50567164/custom-notification-sound-not-working-in-oreo

@@ -1,24 +1,14 @@
 package it.emanuelebriano.owl;
 
-import android.Manifest;
-import android.app.DownloadManager;
-import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Environment;
-import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 
-import org.json.JSONObject;
+import androidx.core.app.ActivityCompat;
+import android.util.Log;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import static android.content.Context.DOWNLOAD_SERVICE;
 
 class MyDownloadTask extends AsyncTask<String, String, String>
 {

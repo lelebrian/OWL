@@ -1,38 +1,26 @@
 package it.emanuelebriano.owl;
 
-import android.Manifest;
-import android.app.ActivityManager;
-import android.app.DownloadManager;
-import android.app.PendingIntent;
-import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.NetworkOnMainThreadException;
-import android.os.PowerManager;
 import android.preference.PreferenceManager;
-import android.provider.SyncStateContract;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
@@ -40,22 +28,9 @@ import android.view.MenuItem;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
 
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -63,15 +38,10 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
-
-import static java.security.AccessController.getContext;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -93,9 +63,6 @@ public class MainActivity extends AppCompatActivity
         Log.i(Constants.AppTAG, "Creating MainActivity()");
 
         Constants.owlContext = getApplicationContext();
-
-        //Constants.logs.add("Start");
-
         super.onCreate(savedInstanceState);
 
         Log.i(Constants.AppTAG, "Creating MainActivity() step 10");
@@ -103,6 +70,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main2);
 
         Log.i(Constants.AppTAG, "Creating MainActivity() step 20");
+
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -117,51 +85,6 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         Load_Mad();
-
-/*
-        ActionBar actionbar = getSupportActionBar();
-        actionbar.setDisplayHomeAsUpEnabled(true);
-        actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
-        */
-
-/*
-
-        try {
-
-            this.mDrawerLayout.addDrawerListener(
-                    new DrawerLayout.DrawerListener() {
-                        @Override
-                        public void onDrawerSlide(View drawerView, float slideOffset) {
-                            // Respond when the drawer's position changes
-                            Log.i(Constants.AppTAG, "onDrawerSlide");
-                        }
-
-                        @Override
-                        public void onDrawerOpened(View drawerView) {
-                            // Respond when the drawer is opened
-                            Log.i(Constants.AppTAG, "onDrawerOpened");
-                        }
-
-                        @Override
-                        public void onDrawerClosed(View drawerView) {
-                            // Respond when the drawer is closed
-                            Log.i(Constants.AppTAG, "onDrawerClosed");
-                        }
-
-                        @Override
-                        public void onDrawerStateChanged(int newState) {
-                            // Respond when the drawer motion state changes
-                            Log.i(Constants.AppTAG, "onDrawerStateChanged");
-                        }
-                    }
-            );
-        }
-        catch(Exception e)
-        {
-            Log.e(Constants.AppTAG, e.getMessage());
-        }
-
-        */
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         Log.i(Constants.AppTAG, "   preferencemanager initialised");
@@ -203,11 +126,6 @@ public class MainActivity extends AppCompatActivity
                 mMessageReceiver, new IntentFilter("AddLog"));
 
         Log.i(Constants.AppTAG, "Trying to schedule job");
-
-        /*
-        MyJobService mjs = new MyJobService();
-        mjs.schedule(this);
-        */
     }
 
     public void Restart_Workers(boolean force_Stop) {
@@ -248,64 +166,7 @@ public class MainActivity extends AppCompatActivity
         if (workers_Running == false) {
             Constants.logToFile_Worker(10, "Starting first workers because no worker tagged OWL is running");
 
-            // Eventually Deletes all workers
-            //WorkManager.getInstance().pruneWork();
-
-            /* ONE TIME WORK REQUEST
             try {
-                OneTimeWorkRequest wr_CheckAlive =
-                        new OneTimeWorkRequest.Builder(MyWorker.class)
-                                .setInitialDelay(10, TimeUnit.SECONDS)
-                                .addTag("OWL")
-                                .build();
-
-                //WorkManager.getInstance().enqueue(wr_CheckAlive);
-                WorkManager.getInstance().enqueueUniqueWork("OWL_Worker", ExistingWorkPolicy.REPLACE, wr_CheckAlive);
-            }
-            catch (Exception e)
-            {
-                Constants.WebLog(10, "Exception starting worker: " + e.getMessage());
-            }
-            */
-
-
-            try {
-                /*
-                Data source_1 = new Data.Builder()
-                        .putString("periodicWorkerName", "OWL_PeriodicWorker_1")
-                        .build();
-                OneTimeWorkRequest wr_CheckAlive_1 =
-                        new OneTimeWorkRequest.Builder(MyPeriodicWorkerLauncher.class)
-                                .setInputData(source_1)
-                                .setInitialDelay(4, TimeUnit.MINUTES)
-                                .addTag("OWL")
-                                .build();
-                WorkManager.getInstance().enqueueUniqueWork("OWL_Worker_1", ExistingWorkPolicy.REPLACE, wr_CheckAlive_1);
-
-                Data source_2 = new Data.Builder()
-                        .putString("periodicWorkerName", "OWL_PeriodicWorker_2")
-                        .build();
-                OneTimeWorkRequest wr_CheckAlive_2 =
-                        new OneTimeWorkRequest.Builder(MyPeriodicWorkerLauncher.class)
-                                .setInputData(source_2)
-                                .setInitialDelay(9, TimeUnit.MINUTES)
-                                .addTag("OWL")
-                                .build();
-                WorkManager.getInstance().enqueueUniqueWork("OWL_Worker_2", ExistingWorkPolicy.REPLACE, wr_CheckAlive_2);
-
-                Data source_3 = new Data.Builder()
-                        .putString("periodicWorkerName", "OWL_PeriodicWorker_3")
-                        .build();
-                OneTimeWorkRequest wr_CheckAlive_3 =
-                        new OneTimeWorkRequest.Builder(MyPeriodicWorkerLauncher.class)
-                                .setInputData(source_3)
-                                .setInitialDelay(14, TimeUnit.MINUTES)
-                                .addTag("OWL")
-                                .build();
-                WorkManager.getInstance().enqueueUniqueWork("OWL_Worker_3", ExistingWorkPolicy.REPLACE, wr_CheckAlive_3);
-
-                Constants.logToFile_Worker(10, "Enqueued 3 start workers. Checking");
-                */
 
                 // PERIODIC
                 String periodicWorkerName = "OWL_Master";
@@ -567,35 +428,6 @@ public class MainActivity extends AppCompatActivity
             //Load_Weblog();
             AlarmManager.ReadForecast(this);
         } else if (id == R.id.nav_update) {
-
-            /*
-            String url = check_and_update(this);
-
-            Constants.WebLog(2, "Manual Check for updates - url answered is: " + url);
-
-            if (url == "")
-            {
-                Snackbar.make(findViewById(R.id.drawer_layout), "No update available", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-
-                Constants.WebLog(2, "No updates available");
-            }
-            else
-            {
-                try {
-                    updater u = new updater();
-                    u.Download();
-                }
-                catch(Exception e)
-                {
-                    Snackbar.make(findViewById(R.id.drawer_layout), e.getMessage(), Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-
-                    Constants.WebLog(2, "Exception: " + e.getMessage());
-                }
-            }
-            */
-
             Constants.AppLog(0, "Update called", this);
 
             PackageInfo pInfo = null;
@@ -616,63 +448,6 @@ public class MainActivity extends AppCompatActivity
             // NEW 01/04/2019
             Update(url_new, short_Name);
 
-            // LAST WORKING - commented 01/04/2019 (broken)
-            /*
-
-
-
-
-
-
-            // Antother test under
-            /*
-
-            MyDownloadTask dt = new MyDownloadTask();
-            String resp = "";
-            try {
-                resp = dt.execute(url_new, short_Name).get();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                Log.e(Constants.AppTAG, e.getMessage());
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-                Log.e(Constants.AppTAG, e.getMessage());
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-                Log.e(Constants.AppTAG, e.getMessage());
-            }
-
-            Log.i(Constants.AppTAG, "Got response: *" + resp + "*");
-
-            if (resp != "ok")
-            {
-                Log.i(Constants.AppTAG, "Resp is not OK");
-
-                Snackbar.make(findViewById(R.id.drawer_layout), "No update available", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-
-                Constants.WebLog(2, "No updates available.");
-            }
-            else
-            {
-
-                Log.i(Constants.AppTAG, "Resp is OK");
-
-                try {
-                    updater u = new updater();
-                    u.Download();
-                }
-                catch(Exception e)
-                {
-                    Snackbar.make(findViewById(R.id.drawer_layout), e.getMessage(), Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-
-                    Constants.WebLog(2, "Exception: " + e.getMessage());
-                }
-            }
-            */
         } else if (id == R.id.send_logs_by_mail) {
             Constants.send_log_by_mail(this);
         } else if (id == R.id.nav_snooze_0) {
@@ -786,77 +561,10 @@ public class MainActivity extends AppCompatActivity
         intent.setData(Uri.parse(url));
         startActivity(intent);
 
-        /*
-        new Thread(new Runnable() {
-            public void run() {
-                try {
-                    PackageInfo pInfo = null;
-                    try {
-                        pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                    } catch (PackageManager.NameNotFoundException e) {
-                        e.printStackTrace();
-                    }
+    }
 
-                    String version = pInfo.versionName;
-                    int verCode = pInfo.versionCode;
-                    int new_version = verCode + 1;
-                    String apk_name = "owl_" + String.valueOf(new_version) + ".apk";
-                    String apk_url = "http://www.emanuelebriano.it/" + apk_name;
+    public void UpdateSnoozeButton()
+    {
 
-                    //Constants.AppLog(0, "   step 0", getApplicationContext());
-
-                    URL url = new URL(apk_url);
-                    //Constants.AppLog(0, "   step 0.1", getApplicationContext());
-
-                    HttpURLConnection c = (HttpURLConnection) url.openConnection();
-                    //Constants.AppLog(0, "   step 0.2", getApplicationContext());
-                    c.setRequestMethod("GET");
-                    //Constants.AppLog(0, "   step 0.3", getApplicationContext());
-                    c.setDoOutput(true);
-                    //Constants.AppLog(0, "   step 0.4", getApplicationContext());
-                    int respcode = c.getResponseCode();
-                    //Constants.AppLog(0, "   response code is " + String.valueOf(respcode), getApplicationContext());
-
-                    c.connect();
-
-                    //Constants.AppLog(0, "   step 1", getApplicationContext());
-
-                    String PATH = Environment.getExternalStorageDirectory() + "/download/";
-                    File file = new File(PATH);
-                    file.mkdirs();
-                    File outputFile = new File(file, apk_name);
-                    FileOutputStream fos = new FileOutputStream(outputFile);
-
-                    //Constants.AppLog(0, "   step 2", getApplicationContext());
-
-                    InputStream is = c.getInputStream();
-
-                    byte[] buffer = new byte[1024];
-                    int len1 = 0;
-                    while ((len1 = is.read(buffer)) != -1) {
-                        fos.write(buffer, 0, len1);
-                    }
-                    fos.close();
-                    is.close();//till here, it works fine - .apk is download to my sdcard in download file
-
-                    //Constants.AppLog(0, "   step 3", getApplicationContext());
-
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(Uri.fromFile(new File(Environment.getExternalStorageDirectory() + "/download/" + apk_name)), "application/vnd.android.package-archive");
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-
-                    //Constants.AppLog(0, "   step 4", getApplicationContext());
-                }
-                catch (Exception e) {
-                    String type = e.getClass().getCanonicalName();
-                    Constants.AppLog(0, "Update " + type + " error! " + e.getMessage(), getApplicationContext());
-                    Constants.AppLog(0, "Update error stack trace: " + e.getStackTrace(), getApplicationContext());
-
-                    Toast.makeText(getApplicationContext(), "Update " + type + "error! " + e.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            }
-        }).start();
-        */
     }
 }
