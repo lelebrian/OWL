@@ -22,7 +22,7 @@ public class MyJobService extends JobService {
 
         Context context = mainAct;
 
-        Constants.AppLogDirect(10, "scheduling MyJobService job");
+        Constants.AppLogDirect(10, "scheduling MyJobService job", mainAct);
 
         Log.d(Constants.AppTAG, "scheduling job");
 
@@ -54,18 +54,18 @@ public class MyJobService extends JobService {
 
         Log.d(Constants.AppTAG, "doMyWork called");
 
-        Constants.AppLogDirect(10, "doMyWork called");
+        Constants.AppLogDirect(10, "doMyWork called", mainAct);
 
         if (Constants.active == false)
         {
-            Constants.AppLogDirect(10, "   trying to restart MainActivity");
+            Constants.AppLogDirect(10, "   trying to restart MainActivity", mainAct);
 
             Intent intent = new Intent(mainAct, MainActivity.class);
             startActivity(intent);
         }
         else
         {
-            Constants.AppLogDirect(0, "   MainActivity active");
+            Constants.AppLogDirect(0, "   MainActivity active", mainAct);
         }
     }
 }

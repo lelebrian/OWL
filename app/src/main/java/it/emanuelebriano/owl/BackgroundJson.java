@@ -33,6 +33,8 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
 
+
+
     String bg_Estimate;
     String bg_Slope;
     String s_Time;
@@ -55,7 +57,7 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
     protected JSONObject doInBackground(String... params) {
 
         Log.i(Constants.AppTAG, "Background Task called");
-        Constants.AppLogDirect(0,"   JSONObject.Background Task called");
+        //Constants.AppLogDirect(0,"   JSONObject.Background Task called");
 
         String resp = "";
 
@@ -157,12 +159,12 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
 
             String msg = "BackgroundJson Exception 1: " + e.getMessage();
             Log.e(Constants.AppTAG, msg);
-            Constants.AppLogDirect(10,msg);
+            //Constants.AppLogDirect(10,msg);
         }
 
         Log.i(Constants.AppTAG, "   Background JSON - check 002");
 
-        Constants.AppLogDirect(0,"      preparing to write this JSON Object " + postDataParams.toString());
+        //Constants.AppLogDirect(0,"      preparing to write this JSON Object " + postDataParams.toString());
 
 
         try {
@@ -173,7 +175,7 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
             writer.write(getPostDataString(postDataParams));
 
             Log.i(Constants.AppTAG, "   preparing to write " + getPostDataString(postDataParams));
-            Constants.AppLogDirect(0,"      preparing to write " + getPostDataString(postDataParams));
+            //Constants.AppLogDirect(0,"      preparing to write " + getPostDataString(postDataParams));
 
             writer.flush();
             writer.close();
@@ -186,7 +188,7 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
             if (responseCode == HttpsURLConnection.HTTP_OK) {
 
                 Log.i(Constants.AppTAG, "      response ok ");
-                Constants.AppLogDirect(0,"      response ok ");
+                //Constants.AppLogDirect(0,"      response ok ");
 
                 BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuilder total = new StringBuilder();
@@ -207,11 +209,11 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
 
             String msg = "!!!   BackgroundJson Exception 2: " + e.getMessage();
             Log.e(Constants.AppTAG, msg);
-            Constants.AppLogDirect(20 ,msg);
+            //Constants.AppLogDirect(20 ,msg);
         }
 
         Log.i(Constants.AppTAG, "   Background JSON - check 003 - " + resp);
-        Constants.AppLogDirect(0, "      Background JSON - check 003 - " + resp); // New in 177
+        //Constants.AppLogDirect(0, "      Background JSON - check 003 - " + resp); // New in 177
 
         try
         {
@@ -222,21 +224,21 @@ public class BackgroundJson extends AsyncTask<String, String, JSONObject> {
                 jObj = ja.getJSONObject(0);
             } catch (JSONException e) {
                 Log.e(Constants.AppTAG, "Error parsing data " + e.toString());
-                Constants.AppLogDirect(20, "!!! Error parsing data " + e.toString());
+                //Constants.AppLogDirect(20, "!!! Error parsing data " + e.toString());
             }
 
             Log.i(Constants.AppTAG, "      Parsing OK");
-            Constants.AppLogDirect(9, "      Parsing OK");
+            //Constants.AppLogDirect(9, "      Parsing OK");
 
             // return JSON String
             return jObj;
         } catch (Exception e) {
             String msg = "!!!   BackgroundJson Exception 3: " + e.getMessage();
             Log.e(Constants.AppTAG, msg);
-            Constants.AppLogDirect(20,msg);
+            //Constants.AppLogDirect(20,msg);
         }
 
-        Constants.AppLogDirect(0,"JSONObject.Background Task ended");
+        //Constants.AppLogDirect(0,"JSONObject.Background Task ended");
 
         return null;
     }

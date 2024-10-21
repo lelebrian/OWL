@@ -27,23 +27,23 @@ public class OwlBroadcastReceiver extends BroadcastReceiver {
 
     //private static final String TAG = "OwlBroadcastReceiver";
     @Override
-    public void onReceive(Context context, Intent intent)
+    public void onReceive(Context ctx, Intent intent)
     {
         // NEW in v179
         try {
             // *** LOGS the call *** ///
-            Constants.AppLogDirect(0, "OwlBroadcastReceiver.onReceive");
+            Constants.AppLogDirect(0, "OwlBroadcastReceiver.onReceive", ctx);
 
             long now = currentTimeMillis();
             int passed = (int) ((now - last_received) / 1000);
 
             // *** LOGS the call *** ///
-            Constants.AppLogDirect(0, "   " + String.valueOf(passed) + " seconds passed from last notification");
+            Constants.AppLogDirect(0, "   " + String.valueOf(passed) + " seconds passed from last notification", ctx);
 
             last_received = now;
 
             String action = intent.getAction();
-            Constants.AppLogDirect(0, "   Action is " + action);
+            Constants.AppLogDirect(0, "   Action is " + action, ctx);
             // *** //
 
             if (action == "com.eveningoutpost.dexdrip.BgEstimate") {
@@ -68,7 +68,7 @@ public class OwlBroadcastReceiver extends BroadcastReceiver {
                 String log = "   onReceive: " + sb.toString();
 
                 Log.d(Constants.AppTAG, log);
-                Constants.AppLogDirect(0, log);
+                Constants.AppLogDirect(0, log, ctx);
 
                 try {
                     log = "";
@@ -114,14 +114,14 @@ public class OwlBroadcastReceiver extends BroadcastReceiver {
                             + " and slope " + String.valueOf(slope) + " at time " + s_Time;  // NEW. Added time to log
 
                     //Constants.WebLog(2,log_Map);
-                    Constants.AppLogDirect(10, log_Map);
+                    Constants.AppLogDirect(10, log_Map, ctx);
 
                     //Constants.WebLog(sb_Slopes.toString());
 
                     // Now, let's evaluate wether to cast an Alarm
-                    AlarmManager.EvaluateSensorAlarm(context, time, estimate, slope);
+                    AlarmManager.EvaluateSensorAlarm(ctx, time, estimate, slope);
 
-                    Constants.AppLogDirect(0, "   Tries to start background call JSON (*)");
+                    Constants.AppLogDirect(0, "   Tries to start background call JSON (*)", ctx);
 
                     try {
 
@@ -141,19 +141,19 @@ public class OwlBroadcastReceiver extends BroadcastReceiver {
                         Log.e(Constants.AppTAG, e.getMessage());
                         e.printStackTrace();
 
-                        Constants.AppLogDirect(20, "      OwlBroadcastReceiver Exception 1: " + e.getMessage());
+                        Constants.AppLogDirect(20, "      OwlBroadcastReceiver Exception 1: " + e.getMessage(), ctx);
                     }
                 } catch (Exception e) {
                     String m = "      OwlBroadcastReceiver Exception 2: " + e.getMessage();
                     Log.e(Constants.AppTAG, m);
-                    Constants.AppLogDirect(20, m);
+                    Constants.AppLogDirect(20, m, ctx);
                 }
             }
         }
         catch (Exception e) {
             String m = "      OwlBroadcastReceiver Exception global: " + e.getMessage();
             Log.e(Constants.AppTAG, m);
-            Constants.AppLogDirect(20, m);
+            Constants.AppLogDirect(20, m, ctx);
         }
     }
 }

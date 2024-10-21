@@ -34,7 +34,7 @@ public class OwlService extends IntentService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        Constants.AppLogDirect(10, "OwlService.onStartCommand");
+        Constants.AppLogDirect(10, "OwlService.onStartCommand", this);
 
         Log.i(Constants.AppTAG, "OwlService onstartCommand()");
 
@@ -57,7 +57,7 @@ public class OwlService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         // This is what the service does
-        Constants.AppLogDirect(10, "OwlService.onHandle");
+        Constants.AppLogDirect(10, "OwlService.onHandle", this);
 
             try {
                 Log.i(Constants.AppTAG , "OWL service onHandle");
@@ -78,7 +78,7 @@ public class OwlService extends IntentService {
 
     @Override
     public void onCreate() {
-        Constants.AppLogDirect(10, "OwlService.onCreate!");
+        Constants.AppLogDirect(10, "OwlService.onCreate!", this);
 
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         filter.addAction(Intent.ACTION_ALL_APPS);
@@ -91,7 +91,7 @@ public class OwlService extends IntentService {
     public void onDestroy() {
 
         Log.e(Constants.AppTAG, "OwlService.onDestroy!");
-        Constants.AppLogDirect(10, "OwlService.onDestroy!");
+        Constants.AppLogDirect(10, "OwlService.onDestroy!", this);
 
         super.onDestroy();
         // Unregister service

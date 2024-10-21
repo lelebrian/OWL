@@ -16,12 +16,14 @@ import android.preference.PreferenceManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -32,6 +34,7 @@ import android.view.MenuItem;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -51,6 +54,7 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final int REQUEST_CODE_NOTIFICATION_PERMISSION = 1001;
+    private static final int REQUEST_CODE_STORAGE_PERMISSION = 1002;
     Intent mServiceIntent;
 
     private DrawerLayout mDrawerLayout;
@@ -71,7 +75,9 @@ public class MainActivity extends AppCompatActivity
 
         // NEW 20/10/2024 for Android 13 - test!
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-
+            requestStoragePermissionsForTiramisu();
+        } else {
+            requestLegacyStoragePermissions();
         }
         // end NEW
 
@@ -102,7 +108,7 @@ public class MainActivity extends AppCompatActivity
             // ADD FIRST LAUNCH CODE HERE
             Constants.Initialise(version);
             Constants.AppLogDirect(20, "Created new OWL MainActivity version " + version
-                    + " randomID " + String.valueOf(Constants.randomID));
+                    + " randomID " + String.valueOf(Constants.randomID), getApplicationContext());
         }
 
         Restart_Workers(false);
@@ -167,7 +173,15 @@ public class MainActivity extends AppCompatActivity
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted, proceed with file writing
             } else {
-                Log.e("Permission", "Storage permission denied");
+                // Show a Toast notification for permission denial
+                Toast.makeText(this, "Storage permission denied. Cannot save logs.", Toast.LENGTH_LONG).show();
+
+                // Optionally, show a dialog explaining the importance of the permission
+                new AlertDialog.Builder(this)
+                        .setTitle("Permission Required")
+                        .setMessage("This app needs storage permission to save log files.")
+                        .setPositiveButton("OK", null)
+                        .show();
             }
         }
     }
@@ -345,7 +359,7 @@ public class MainActivity extends AppCompatActivity
 
         super.onDestroy();
 
-        Constants.AppLogDirect(0, "ON_DESTROY");
+        Constants.AppLogDirect(0, "ON_DESTROY", getApplicationContext());
 
         Log.e(Constants.AppTAG, "MainActivity.super.onDestroy() done");
     }
@@ -364,7 +378,7 @@ public class MainActivity extends AppCompatActivity
         //PowerManager pm = (PowerManager) this.getApplicationContext().getSystemService(Context.POWER_SERVICE);
         //pm.reboot("anti-crash");
 
-        Constants.AppLogDirect(0, "ON_STOP");
+        Constants.AppLogDirect(0, "ON_STOP", getApplicationContext());
 
         Log.e(Constants.AppTAG, "MainActivity.super.onStop() done");
     }
@@ -377,7 +391,7 @@ public class MainActivity extends AppCompatActivity
         // call the superclass method first
         super.onPause();
 
-        Constants.AppLogDirect(0, "ON_PAUSE");
+        Constants.AppLogDirect(0, "ON_PAUSE", getApplicationContext());
 
         Log.e(Constants.AppTAG, "MainActivity.super.onPause() done");
     }
@@ -441,7 +455,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         // Refresh the menu, especially the Snooze minutes left
-        Constants.AppLogDirect(20, "On Prepare Options Menu");
+        Constants.AppLogDirect(20, "On Prepare Options Menu", getApplicationContext());
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         MenuItem item = navigationView.getMenu().findItem(R.id.nav_snooze_0);
@@ -456,8 +470,8 @@ public class MainActivity extends AppCompatActivity
         }
         else
         {
-            Constants.AppLogDirect(20, "nav_snooze_0 not found in menu");
-            Constants.AppLogDirect(20, "Item 0 is " + menu.getItem(0).getItemId());
+            Constants.AppLogDirect(20, "nav_snooze_0 not found in menu", getApplicationContext());
+            Constants.AppLogDirect(20, "Item 0 is " + menu.getItem(0).getItemId(), getApplicationContext());
         }
 
         return super.onPrepareOptionsMenu(menu);
@@ -481,7 +495,7 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        Constants.AppLogDirect(0, "onNavigationItemSelected id = '" + id + "'");
+        Constants.AppLogDirect(0, "onNavigationItemSelected id = '" + id + "'", getApplicationContext());
 
         if (id == R.id.nav_mad) {
             Load_Mad();
@@ -512,18 +526,18 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.send_logs_by_mail) {
             Constants.send_log_by_mail(this);
         } else if (id == R.id.nav_snooze_0) {
-            Constants.AppLogDirect(0, "Snooze 0 pressed");
+            Constants.AppLogDirect(0, "Snooze 0 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(0);
+            AlarmManager.setSnooze(0, getApplicationContext());
 
             UpdateSnoozeButton();
         } else if (id == R.id.nav_snooze_15) {
 
-            Constants.AppLogDirect(0, "Snooze 30 pressed");
+            Constants.AppLogDirect(0, "Snooze 30 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(15);
+            AlarmManager.setSnooze(15, getApplicationContext());
 
             UpdateSnoozeButton();
 
@@ -540,10 +554,10 @@ public class MainActivity extends AppCompatActivity
             }.start();
         } else if (id == R.id.nav_snooze_30) {
 
-            Constants.AppLogDirect(0, "Snooze 30 pressed");
+            Constants.AppLogDirect(0, "Snooze 30 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(30);
+            AlarmManager.setSnooze(30, getApplicationContext());
 
             UpdateSnoozeButton();
 
@@ -560,10 +574,10 @@ public class MainActivity extends AppCompatActivity
             }.start();
         } else if (id == R.id.nav_snooze_60) {
 
-            Constants.AppLogDirect(0, "Snooze 60 pressed");
+            Constants.AppLogDirect(0, "Snooze 60 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(60);
+            AlarmManager.setSnooze(60, getApplicationContext());
 
             UpdateSnoozeButton();
 
@@ -580,24 +594,24 @@ public class MainActivity extends AppCompatActivity
             }.start();
         } else if (id == R.id.nav_test_alarm) {
 
-            Constants.AppLogDirect(0, "Testing Alarm");
+            Constants.AppLogDirect(0, "Testing Alarm", getApplicationContext());
 
             // Also tests alarm
             AlarmManager.CreateNotification(this, "Test Alarm", "level = 20", 20);
         } else if (id == R.id.nav_test_alarm_high) {
-            Constants.AppLogDirect(0, "Testing Alarm High");
+            Constants.AppLogDirect(0, "Testing Alarm High", getApplicationContext());
 
             // Also tests alarm
             AlarmManager.CreateNotification(this, "Test Alarm High", "High level = 30", 30);
         } else if (id == R.id.nav_test_alarm_max) {
-            Constants.AppLogDirect(0, "Testing Alarm Max");
+            Constants.AppLogDirect(0, "Testing Alarm Max", getApplicationContext());
 
             // Also tests alarm
             AlarmManager.CreateNotification(this, "Test Alarm Max", "Max level = 40", 40);
         }
         else if (id == R.id.nav_restart_workers) {
 
-            Constants.AppLogDirect(10, "Restarting workers");
+            Constants.AppLogDirect(10, "Restarting workers", getApplicationContext());
 
             Restart_Workers(true);
         }
@@ -622,20 +636,20 @@ public class MainActivity extends AppCompatActivity
             // TODO: Add update on/off switch in preferences
             String url_new = "http://www.emanuelebriano.it/owl_" + String.valueOf(new_version) + ".apk";
 
-            Constants.AppLogDirect(10, "Checking for new update: " + url_new);
+            Constants.AppLogDirect(10, "Checking for new update: " + url_new, ctx);
 
             if (exists(url_new)) {
-                Constants.AppLogDirect(10, "New version available !");
+                Constants.AppLogDirect(10, "New version available !", ctx);
 
                 return url_new;
             } else {
-                Constants.AppLogDirect(10, "No new version available");
+                Constants.AppLogDirect(10, "No new version available", ctx);
 
                 return "";
             }
         } catch (PackageManager.NameNotFoundException e) {
 
-            Constants.AppLogDirect(20, "Exception" + e.getMessage());
+            Constants.AppLogDirect(20, "Exception" + e.getMessage(), ctx);
 
             return e.getMessage();
         }
@@ -650,11 +664,8 @@ public class MainActivity extends AppCompatActivity
                     (HttpURLConnection) new URL(URLName).openConnection();
             con.setRequestMethod("HEAD");
 
-            Constants.AppLogDirect(0, "MainActivity.exists() response code: " + con.getResponseCode());
-
             return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
         } catch (Exception e) {
-            Constants.AppLogDirect(20, "MainActivity.exists() Exception: " + e.getMessage());
             return false;
         }
     }

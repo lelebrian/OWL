@@ -2,10 +2,15 @@ package it.emanuelebriano.owl;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Environment;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import android.net.Uri;
 
 import org.json.JSONObject;
 
@@ -146,7 +151,7 @@ public final class Constants {
 
         if (use_New)
         {
-            AppLogDirect(level, message);
+            AppLogDirect(level, message, ctx);
         }
         else {
             Log.i(AppTAG, "AppLog called()");
@@ -161,30 +166,30 @@ public final class Constants {
             if (WEB_DEBUG_LEVEL == 0) {
                 ToastLog(message, ctx);
 
-                logToFile(level, message, String.valueOf(level));
+                logToFile(level, message, String.valueOf(level), ctx);
             }
         }
     }
 
-    public static void AppLogDirect(int level, String message)
+    public static void AppLogDirect(int level, String message, Context ctx)
     {
         Log.i(AppTAG, "AppLogDirect called()");
 
         //Writes 1 or 2 files - more levels of detail
         if (level >= 20)
         {
-            logToFile(20, message, "exceptions");  // only important logs
-            logToFile(10, message, "10");  // only important logs
-            logToFile(0, message, "0"); // all logs
+            logToFile(20, message, "exceptions", ctx);  // only important logs
+            logToFile(10, message, "10", ctx);  // only important logs
+            logToFile(0, message, "0", ctx); // all logs
         }
         else if (level >= 10)
         {
-            logToFile(10, message, "10");  // only important logs
-            logToFile(0, message, "0"); // all logs
+            logToFile(10, message, "10", ctx);  // only important logs
+            logToFile(0, message, "0", ctx); // all logs
         }
         else // in any case
         {
-            logToFile(level, message, "0"); // all logs
+            logToFile(level, message, "0", ctx); // all logs
         }
     }
 
@@ -208,7 +213,7 @@ public final class Constants {
         text_logs_collection += "\r\n" + currentTimeString + ": " + log;
     }
 
-    // NEW 08/09/2022
+    /* NEW 08/09/2022
     // TODO: TEST. Add sending of file attachments
     public static void send_log_by_mail(Context ctx) {
 
@@ -230,7 +235,62 @@ public final class Constants {
         }
         catch (Exception e)
         {
-            logToFile(30, e.getMessage(), "Exception");
+            logToFile(30, e.getMessage(), "Exception", ctx);
+        }
+    }
+
+     */
+
+    // NEW 21/10/2024
+    public static void send_log_by_mail(Context ctx) {
+        try {
+
+        Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        emailIntent.setType("vnd.android.cursor.dir/email");
+        String[] to = {"emanuele.briano@gmail.com"};
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Owl logs");
+        String s_text = text_logs_collection;
+        emailIntent.putExtra(Intent.EXTRA_TEXT, s_text);
+
+        // Get today's date to filter log files
+        String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
+
+
+            // Directory where logs are stored
+            File directory = new File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+
+            if (directory.exists() && directory.isDirectory()) {
+                ArrayList<Uri> uris = new ArrayList<>();
+
+                // Loop through files in the directory
+                File[] files = directory.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getName().startsWith(currentDateString)) {
+                            Uri fileUri = Uri.fromFile(file);
+                            uris.add(fileUri);
+                        }
+                    }
+                }
+
+                // Add the log files as attachments
+                emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+            }
+
+
+
+            ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
+            text_logs_collection = ""; // Clear log collection after sending
+        } catch (Exception e) {
+            logToFile(30, e.getMessage(), "Exception", ctx);
+
+            // Show the exception in a popup dialog
+            new AlertDialog.Builder(ctx)
+                    .setTitle("Error")
+                    .setMessage("Exception occurred: " + e.getMessage())
+                    .setPositiveButton("OK", null)
+                    .show();
         }
     }
 
@@ -243,7 +303,7 @@ public final class Constants {
     /// ***
     /// Logs to txt file in phone
     /// ***
-    private static void logToFile(int level, String data, String level_name) {
+    private static void logToFile(int level, String data, String level_name, Context context) {
 
         String owl_Name = "OWL_logs";
 
@@ -256,7 +316,15 @@ public final class Constants {
         try {
             Log.d(Constants.AppTAG, "writeToFile()");
 
-            File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+            // NEW Android 13
+            File directory;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                directory = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+            } else {
+                directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+            }
+
+            //File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
             //File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
             //File directory = new File(owlContext.getExternalFilesDir("") + File.separator + owl_Name);
 
