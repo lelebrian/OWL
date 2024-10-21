@@ -61,6 +61,11 @@
             android:title="Test Alarm High" />
 
         <item
+            android:id="@+id/nav_test_alarm_max"
+            android:icon="@drawable/ic_notify_high"
+            android:title="Test Alarm Max" />
+
+        <item
             android:id="@+id/nav_restart_workers"
             android:icon="@drawable/ic_restart"
             android:title="Restart Workers" />

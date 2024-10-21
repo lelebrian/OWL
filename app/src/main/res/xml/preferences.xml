@@ -2,6 +2,15 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <ListPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:defaultValue="2"
+        android:entries="@array/iporisk_to_alarm"
+        android:entryValues="@array/iporisk_to_alarm"
+        android:key="iporisk_to_alarm"
+        android:summary="(min iporisk value to cast alarm)"
+        android:title="Iporisk level" />
+    <ListPreference
         android:defaultValue="1"
         android:entries="@array/intervals"
         android:entryValues="@array/intervals"

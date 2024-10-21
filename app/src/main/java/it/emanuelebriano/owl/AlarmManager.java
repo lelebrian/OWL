@@ -18,7 +18,6 @@ import android.preference.PreferenceManager;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
-import android.view.View;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -49,7 +48,6 @@ public final class AlarmManager {
 
     public static int THRESHOLD_DELTA_UP_FOR_BOLUS = 20;
     public static int THRESHOLD_DELTA_UP_ACTIVE_BOLUS = -25;
-
 
     public static int CHECKRESPONSE_null_times = 0;
     public static int CHECKRESPONSE_null_THRESHOLD = 2;
@@ -107,31 +105,38 @@ public final class AlarmManager {
     static NotificationChannel channel_Low = null;
     static NotificationChannel channel_Medium = null;
     static NotificationChannel channel_High = null;
+    static NotificationChannel channel_Max = null; // new 14/01/2024
 
     static int notificationId_Low = 10;
     static int notificationId_Medium = 20;
-    static int notificationId_High = 40;
+    static int notificationId_High = 30; //updated from 40 to 30 on the 14/01/2024
+    static int notificationId_Max = 40;  // new 14/01/2024
 
     static String CHANNEL_ID_Low = "OwlLow";
     static String CHANNEL_ID_Medium = "OwlMedium";
-    static String CHANNEL_ID_High = "OwlHigh22032020";
+    static String CHANNEL_ID_High = "OwlHigh";
+    static String CHANNEL_ID_Max = "OwlMax";
 
     static Uri alarmSound_Low = null;
     static Uri alarmSound_Medium = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     static Uri alarmSound_High = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-
+    static Uri alarmSound_Max = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
 
     static long[] pattern_Low = {500};  // 1 vibrazione
     static long[] pattern_Medium = {500, 500, 500};  // 2 vibrazioni
     static long[] pattern_High = {500, 500, 500, 500, 500,
-                                500, 500, 500, 500, 500,
-                                500, 500, 500, 500, 500 };  // 15 suoni
+                                500, 500, 500, 500, 500
+                                 };  // 10 suoni
+    static long[] pattern_Max = {500, 500, 500, 500, 500,
+            500, 500, 500, 500, 500,
+            500, 500, 500, 500, 500 };  // 15 suoni
 
     static int kill_duplicate_interval_seconds = 60;
 
 
     private static void createNotificationChannels_if_Null(Context ctx) {
-
+        if (channel_Max == null)
+            createNotificationChannel_Max(ctx);
         if (channel_High == null)
             createNotificationChannel_High(ctx);
         if (channel_Medium == null)
@@ -210,7 +215,7 @@ public final class AlarmManager {
                 channel_Medium.setSound(alarmSound_Medium, null);
                 channel_Medium.setVibrationPattern(pattern_Medium);
                 channel_Medium.enableVibration(true);
-                channel_High.setShowBadge(true);
+                channel_Medium.setShowBadge(true);
 
                 // Register the channel with the system; you can't change the importance
                 // or other notification behaviors after this
@@ -229,9 +234,6 @@ public final class AlarmManager {
     private static void createNotificationChannel_High(Context ctx) {
         try {
 
-            // test 22/03/2020
-            // alarmSound_High = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://"+ ctx.getPackageName() + "/" + R.raw.wannabeloved);
-
             // Create the NotificationChannel, but only on API 26+ because
             // the NotificationChannel class is new and not in the support library
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -240,7 +242,6 @@ public final class AlarmManager {
                 String description =  "OWL High level notifications";
                 int importance = NotificationManager.IMPORTANCE_HIGH;
 
-                // test 22/03/2020
                 NotificationManager mNotificationManager = ctx.getSystemService(NotificationManager.class);
                 NotificationChannel existingChannel = mNotificationManager.getNotificationChannel(CHANNEL_ID_High);
                 //it will delete existing channel if it exists
@@ -254,19 +255,62 @@ public final class AlarmManager {
                 channel_High.setLightColor(Color.BLUE);
                 AudioAttributes audioAttributes = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_ALARM) // NEW 22/03/2020
+                        .setUsage(AudioAttributes.USAGE_ALARM)
                         .build();
                 channel_High.setSound(alarmSound_High, audioAttributes);
                 channel_High.setVibrationPattern(pattern_High);
                 channel_High.enableVibration(true);
                 channel_High.setShowBadge(true);
-                //channel_High.setImportance( importance );   // NEW 28-02-2020
                 // Register the channel with the system; you can't change the importance
                 // or other notification behaviors after this
                 NotificationManager notificationManager = ctx.getSystemService(NotificationManager.class);
                 notificationManager.createNotificationChannel(channel_High);
 
                 Constants.AppLogDirect(0,"Channel High registered");
+            }
+        }
+        catch(Exception e)
+        {
+            Constants.AppLogDirect(20,"AlarmManager exception: " + e.getMessage());
+        }
+    }
+
+    // new 14/01/2024
+    private static void createNotificationChannel_Max(Context ctx) {
+        try {
+            // Create the NotificationChannel, but only on API 26+ because
+            // the NotificationChannel class is new and not in the support library
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+                CharSequence name = "OWLMaxChannel";
+                String description =  "OWL Max level notifications";
+                int importance = NotificationManager.IMPORTANCE_MAX;
+
+                NotificationManager mNotificationManager = ctx.getSystemService(NotificationManager.class);
+                NotificationChannel existingChannel = mNotificationManager.getNotificationChannel(CHANNEL_ID_Max);
+                //it will delete existing channel if it exists
+                if (existingChannel != null) {
+                    mNotificationManager.deleteNotificationChannel(CHANNEL_ID_Max);
+                }
+
+                channel_Max = new NotificationChannel(CHANNEL_ID_Max, name, importance);
+                channel_Max.setDescription(description);
+                channel_Max.enableLights(true);
+                channel_Max.setLightColor(Color.BLUE);
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .build();
+                channel_Max.setSound(alarmSound_Max, audioAttributes);
+                channel_Max.setVibrationPattern(pattern_Max);
+                channel_Max.enableVibration(true);
+                channel_Max.setShowBadge(true);
+                // Register the channel with the system; you can't change the importance
+                // or other notification behaviors after this
+                NotificationManager notificationManager = ctx.getSystemService(NotificationManager.class);
+                notificationManager.createNotificationChannel(channel_Max);
+
+                Constants.AppLogDirect(0,"Channel Max registered");
             }
         }
         catch(Exception e)
@@ -284,227 +328,228 @@ public final class AlarmManager {
 
     public static void EvaluateSensorAlarm(Context ctx, String time, int estimate, int slope)
     {
-        // LOG call
-        /*LOG*/  Constants.AppLogDirect(10, "   EvaluateSensorAlarm(" + time + "," + String.valueOf(estimate) + " , " + String.valueOf(slope) + " )");
-        //Constants.WebLog(0, "EvaluateSensorAlarm( " + String.valueOf(estimate) + " , " + String.valueOf(slope) + " )");
-
-        // Reads the preferences
-        ReadPreferences(ctx);
-
-        // Initialize variables
-        int alarm_level = ALARM_ZERO;
-        String alarm_note = "";
-        /*LOG  Constants.AppLogDirect(0, "      Alarm set to zero"); */
-
-        // Define sensor trend. -1 if the value is decreasing, otherwise +1
-        if (estimate < sensor_Last_Estimate)
-        {
-            Constants.AppLogDirect(0, "      Estimate " + String.valueOf(estimate) + " is lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
-            sensor_Trend = -1;
-
-            // NEW: Corrects slope in case the sensor trend is close to zero
-            if ((slope == 0) && (sensor_Trend == -1))
-            {
-                slope = -1;
-                Constants.AppLogDirect(0, "      NEW: Slope corrected to -1 since the value is decreasing");
-            }
-        }
-        else {
-            Constants.AppLogDirect(0, "      Estimate " + String.valueOf(estimate) + " is NOT lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
-            sensor_Trend = +1;
-        }
-
-        // Re-organizes the saves of the last 8 readings ans appens the new one
-        if (sensor_Last_Estimate_Memory_time_check == time)
-        {
-            // Double activation. Avoids overriding memories
-        }
-        else {
-            // Save last values (add 25/06/2019)
-            sensor_Last_Estimate_Memory_8 = sensor_Last_Estimate_Memory_7;
-            sensor_Last_Estimate_Memory_7 = sensor_Last_Estimate_Memory_6;
-            sensor_Last_Estimate_Memory_6 = sensor_Last_Estimate_Memory_5;   // 30 minutes
-            sensor_Last_Estimate_Memory_5 = sensor_Last_Estimate_Memory_4;   // 25 minutes
-            sensor_Last_Estimate_Memory_4 = sensor_Last_Estimate_Memory_3;   // 20 minutes
-            sensor_Last_Estimate_Memory_3 = sensor_Last_Estimate_Memory_2;   // 15 minutes
-            sensor_Last_Estimate_Memory_2 = sensor_Last_Estimate_Memory_1;   // 10 minutes
-            sensor_Last_Estimate_Memory_1 = sensor_Last_Estimate;   // 5 minutes
-        }
-        sensor_Last_Estimate = estimate;
-        sensor_Last_Slope = slope;
-
-        // Initialises time format // time format is String time = "22/05/2022 10:52";
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-
-        // Gets the time in date format
-        Date time_now = new Date();
         try {
-            time_now = dateFormat.parse(time);
-        } catch (ParseException e) {
-            Constants.AppLogDirect(0, "      PROBLEM WITH TIME PARSING time: " + time);
-        }
+            // LOG call
+            Constants.AppLogDirect(10, "   EvaluateSensorAlarm(" + time + "," + String.valueOf(estimate) + " , " + String.valueOf(slope) + " )");
 
-        // NEW 22/05/2022. Track the last x estimates
-        int estimate_past_15 = -1;
-        int estimate_past_30 = -1;
-        hashmap_Sensor_Readings.put(time, estimate);
-        //for (String key : hashmap_Sensor_Readings.keySet()) {
-        Iterator<Map.Entry<String,Integer>> iter = hashmap_Sensor_Readings.entrySet().iterator();
-        while (iter.hasNext()) {
-            Map.Entry<String,Integer> entry = iter.next();
-            String key = entry.getKey();
+            // Inizialized the story of the decision
+            String story_of_the_decision = "Estimate is " + String.valueOf(estimate) + " - ";
+            story_of_the_decision += "Slope is " + String.valueOf(slope) + " - ";
 
-            // Works in v 178 - Constants.AppLogDirect(0, "      Iteration on key: " + key);
+            // Reads the preferences
+            ReadPreferences(ctx);
 
-            Date time_i = new Date();
+            // Initialize variables
+            int alarm_level = ALARM_ZERO;
+            String alarm_note = "";
+
+            // Define sensor trend. -1 if the value is decreasing, otherwise +1
+            if (estimate < sensor_Last_Estimate) {
+                Constants.AppLogDirect(0, "      Estimate " + String.valueOf(estimate) + " is lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
+                sensor_Trend = -1;
+
+                // NEW: Corrects slope in case the sensor trend is close to zero
+                if ((slope == 0) && (sensor_Trend == -1)) {
+                    slope = -1;
+                    Constants.AppLogDirect(0, "      NEW: Slope corrected to -1 since the value is decreasing");
+                }
+            } else {
+                Constants.AppLogDirect(0, "      Estimate " + String.valueOf(estimate) + " is NOT lower then sensor_Last_Estimate " + String.valueOf(sensor_Last_Estimate));
+                sensor_Trend = 1;
+            }
+
+            story_of_the_decision += "Sensor trend is " + String.valueOf(sensor_Trend) + " - ";
+
+            // Re-organizes the saves of the last 8 readings ans appens the new one
+            if (sensor_Last_Estimate_Memory_time_check == time) {
+                // Double activation. Avoids overriding memories
+            } else {
+                // Save last values (add 25/06/2019)
+                sensor_Last_Estimate_Memory_8 = sensor_Last_Estimate_Memory_7;
+                sensor_Last_Estimate_Memory_7 = sensor_Last_Estimate_Memory_6;
+                sensor_Last_Estimate_Memory_6 = sensor_Last_Estimate_Memory_5;   // 30 minutes
+                sensor_Last_Estimate_Memory_5 = sensor_Last_Estimate_Memory_4;   // 25 minutes
+                sensor_Last_Estimate_Memory_4 = sensor_Last_Estimate_Memory_3;   // 20 minutes
+                sensor_Last_Estimate_Memory_3 = sensor_Last_Estimate_Memory_2;   // 15 minutes
+                sensor_Last_Estimate_Memory_2 = sensor_Last_Estimate_Memory_1;   // 10 minutes
+                sensor_Last_Estimate_Memory_1 = sensor_Last_Estimate;   // 5 minutes
+            }
+            sensor_Last_Estimate = estimate;
+            sensor_Last_Slope = slope;
+
+            // Initialises time format // time format is String time = "22/05/2022 10:52";
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+            // Gets the time in date format
+            Date time_now = new Date();
             try {
-                time_i = dateFormat.parse(key);
+                time_now = dateFormat.parse(time);
             } catch (ParseException e) {
-                Constants.AppLogDirect(20, "!!!      PROBLEM WITH TIME PARSING time: " + time);
+                Constants.AppLogDirect(0, "      PROBLEM WITH TIME PARSING time: " + time);
             }
 
-            long difference = time_now.getTime() - time_i.getTime();
-            int minutes = (int) ((difference) / (1000*60));
+            // NEW 22/05/2022. Track the last x estimates
+            int estimate_past_15 = -1;
+            int estimate_past_30 = -1;
+            hashmap_Sensor_Readings.put(time, estimate);
+            //for (String key : hashmap_Sensor_Readings.keySet()) {
+            Iterator<Map.Entry<String, Integer>> iter = hashmap_Sensor_Readings.entrySet().iterator();
+            while (iter.hasNext()) {
+                Map.Entry<String, Integer> entry = iter.next();
+                String key = entry.getKey();
 
-            if (minutes >= 40) // test, should be 60
-            {
-                // Removes from hashtable if older than 1 hour
-                iter.remove(); // test: should be safe
-                // Works in v 178 - Constants.AppLogDirect(10, "      Removing from hashmap_Sensor_Reading at time: " + dateFormat.format(time_i) +
-                //        " because the difference is " + difference + " which is " + String.valueOf(minutes) + " minutes");
-            }
-            else
-            {
-                // Works in v 178 - Constants.AppLogDirect(10, "      Keeping hashmap_Sensor_Reading at time: " + dateFormat.format(time_i) + " = " + hashmap_Sensor_Readings.get(key).toString() +
-                //        " because the difference is " + difference + " which is " + String.valueOf(minutes) + " minutes");
+                // Works in v 178 - Constants.AppLogDirect(0, "      Iteration on key: " + key);
 
-                if ((minutes >= 12) && (minutes <= 18))
-                {
-                    estimate_past_15 = hashmap_Sensor_Readings.get(key);
+                Date time_i = new Date();
+                try {
+                    time_i = dateFormat.parse(key);
+                } catch (ParseException e) {
+                    Constants.AppLogDirect(20, "!!!      PROBLEM WITH TIME PARSING time: " + time);
                 }
-                if ((minutes >= 27) && (minutes <= 33))
+
+                long difference = time_now.getTime() - time_i.getTime();
+                int minutes = (int) ((difference) / (1000 * 60));
+
+                if (minutes >= 40) // test, should be 60
                 {
-                    estimate_past_30 = hashmap_Sensor_Readings.get(key);
+                    // Removes from hashtable if older than 1 hour
+                    iter.remove(); // test: should be safe
+                } else {
+                    if ((minutes >= 12) && (minutes <= 18)) {
+                        estimate_past_15 = hashmap_Sensor_Readings.get(key);
+                    }
+                    if ((minutes >= 27) && (minutes <= 33)) {
+                        estimate_past_30 = hashmap_Sensor_Readings.get(key);
+                    }
                 }
             }
+            Constants.AppLogDirect(10, "      estimate for 30 minutes ago is " + String.valueOf(estimate_past_30));
+            Constants.AppLogDirect(10, "      estimate for 15 minutes ago is " + String.valueOf(estimate_past_15));
 
-            // Works in v 178 - Constants.AppLogDirect(0, "      Iteration end: " + key);
-        }
-        Constants.AppLogDirect(10, "      estimate for 30 minutes ago is " + String.valueOf(estimate_past_30));
-        Constants.AppLogDirect(10, "      estimate for 15 minutes ago is " + String.valueOf(estimate_past_15));
+            story_of_the_decision += "estimate 30 mins ago is " + String.valueOf(estimate_past_30) + " - ";
+            story_of_the_decision += "estimate 15 mins ago is " + String.valueOf(estimate_past_15) + " - ";
 
-        // Checks if the value is too low. If inferior to threshold_low, sets the alarm to the max value.
-        if (estimate < threshold_low) // 90
-        {
-            Constants.AppLogDirect(10, "      *** Setting alarm level to 50. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
-            //cast_alarm = true;
-            alarm_level = Math.max( ALARM_MAX , alarm_level );
-            alarm_note = " LOW";
-        }
-        else
-        {
-
-        }
-
-        // Calculates the estimate in 30 and 60 minutes
-        // Base version. slope_factor_hour = 60, slope_minutes_Step1 = 30
-        float future_value_Step1 = estimate + (slope_factor_hour * ((float) slope_minutes_Step1 / (float) 60) * slope);
-        float future_value_Step2 = estimate + (slope_factor_hour * ((float) slope_minutes_Step2 / (float) 60) * slope);
-        if ((estimate_past_15 == -1) || (estimate_past_30 == -1)) {
-            // Stick to the base version
-        }
-        else
-        {
-            float delta_per_minute = (float)(estimate - estimate_past_15) / (float)15;
-            // aggiunge un coefficiente peggiorativo se non vi è il valore a -30
-            // o se il delta è in aumento negativo
-            float delta_increase = delta_per_minute / 2;
-            if (estimate_past_30 != -1)
+            // Checks if the value is too low. If inferior to threshold_low, sets the alarm to the max value.
+            if (estimate < threshold_low) // 90
             {
-                // Se lo abbiamo, calcola l'incremento di delta
-                float delta_per_minute_old = (float)(estimate_past_15 - estimate_past_30) / (float)15;
+                Constants.AppLogDirect(20, "      *** Setting alarm level to 50. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
+                //cast_alarm = true;
+                alarm_level = Math.max(ALARM_MAX, alarm_level);
+                alarm_note = " LOW";
 
-                Constants.AppLogDirect(10, "      delta per minute old is " + String.valueOf(delta_per_minute_old));
+                story_of_the_decision += "estimate is low, therefore ALARM_MAX" + " - ";
+            } else {
 
-                if (delta_per_minute_old < delta_per_minute) delta_increase = 0; // annulla il coefficiente peggiorativo
             }
-            Constants.AppLogDirect(10, "      delta per minute is " + String.valueOf(delta_per_minute));
-            Constants.AppLogDirect(10, "      delta increase is " + String.valueOf(delta_increase));
 
-            float delta_per_minute_corrected = delta_per_minute + delta_increase;
-            Constants.AppLogDirect(10, "      delta per minute corrected is " + String.valueOf(delta_per_minute_corrected));
+            // Calculates the estimate in 30 and 60 minutes
+            // Base version. slope_factor_hour = 60, slope_minutes_Step1 = 30
+            float future_value_Step1 = estimate + (slope_factor_hour * ((float) slope_minutes_Step1 / (float) 60) * slope);
+            float future_value_Step2 = estimate + (slope_factor_hour * ((float) slope_minutes_Step2 / (float) 60) * slope);
+            if ((estimate_past_15 == -1) || (estimate_past_30 == -1)) {
+                // Stick to the base version
+                story_of_the_decision += "futurevalueStep1 (old) is " + String.valueOf(future_value_Step1) + " - ";
+                story_of_the_decision += "futurevalueStep2 (old) is " + String.valueOf(future_value_Step2) + " - ";
+            } else {
+                float delta_per_minute = (float) (estimate - estimate_past_15) / (float) 15;
+                // aggiunge un coefficiente peggiorativo se non vi è il valore a -30
+                // o se il delta è in aumento negativo
+                float delta_increase = delta_per_minute / 2;
+                if (estimate_past_30 != -1) {
+                    // Se lo abbiamo, calcola l'incremento di delta
+                    float delta_per_minute_old = (float) (estimate_past_15 - estimate_past_30) / (float) 15;
 
-            // NEW in 176 23/05/2022: TEST version 176
-            future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
-            future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
-        }
+                    Constants.AppLogDirect(10, "      delta per minute old is " + String.valueOf(delta_per_minute_old));
 
-        String log = "      Future value (step1) is " + String.valueOf(future_value_Step1);
-        Constants.AppLogDirect(10, log);
+                    if (delta_per_minute_old < delta_per_minute)
+                        delta_increase = 0; // annulla il coefficiente peggiorativo
+                }
+                Constants.AppLogDirect(10, "      delta per minute is " + String.valueOf(delta_per_minute));
+                Constants.AppLogDirect(10, "      delta increase is " + String.valueOf(delta_increase));
 
-        log = "      Future value (step2) is " + String.valueOf(future_value_Step2);
-        Constants.AppLogDirect(10, log);
+                float delta_per_minute_corrected = delta_per_minute + delta_increase;
+                Constants.AppLogDirect(10, "      delta per minute corrected is " + String.valueOf(delta_per_minute_corrected));
 
-        // Checks if the value is too low in (step1) minutes
-        if (future_value_Step1 < threshold_low)
-        {
-            alarm_level = Math.max( ALARM_HIGH, alarm_level );
-            Constants.AppLogDirect(10, "   Setting alarm level to 30. Future value 1 (" + String.valueOf(future_value_Step1) + ")is < than " + String.valueOf(threshold_low));
-            alarm_note = " getting LOW";
-        }
-        else {
+                // NEW in 176 23/05/2022: TEST version 176
+                future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
+                future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
+
+                story_of_the_decision += "futurevalueStep1 (new) is " + String.valueOf(future_value_Step1) + " - ";
+                story_of_the_decision += "futurevalueStep2 (new) is " + String.valueOf(future_value_Step2) + " - ";
+            }
+
+            String log = "      Future value (step1) is " + String.valueOf(future_value_Step1);
+            Constants.AppLogDirect(10, log);
+
+            log = "      Future value (step2) is " + String.valueOf(future_value_Step2);
+            Constants.AppLogDirect(10, log);
+
             // Checks if the value is too low in (step1) minutes
-            if (future_value_Step2 < threshold_low) {
-                alarm_level = Math.max(ALARM_MEDIUM, alarm_level);
-                Constants.AppLogDirect(10, "   Setting alarm level to 20 (if not higher). Future value 2 is < than " + String.valueOf(threshold_low));
-                alarm_note = " getting LOW";
-            }
-        }
-
-        // NEW 19-02-2020. Checks if falling steady
-        if (alarm_level < ALARM_HIGH)
-        {
-            int falling_steady_threshold = -20;
-            if ((sensor_Last_Estimate - sensor_Last_Estimate_Memory_2) < falling_steady_threshold)
-            {
-                // falling steady
+            if (future_value_Step1 < threshold_low) {
                 alarm_level = Math.max(ALARM_HIGH, alarm_level);
-                alarm_note = " FALLING STEADY";
+                Constants.AppLogDirect(10, "   Setting alarm level to 30. Future value 1 (" + String.valueOf(future_value_Step1) + ")is < than " + String.valueOf(threshold_low));
+                alarm_note = " getting LOW";
 
-                Constants.AppLogDirect(10, "   Setting alarm level to 30 falling steady. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
+                story_of_the_decision += "futurevalueStep1 is too low, therefore at least ALARM_HIGH" + " - ";
+
+            } else {
+                // Checks if the value is too low in (step1) minutes
+                if (future_value_Step2 < threshold_low) {
+                    alarm_level = Math.max(ALARM_MEDIUM, alarm_level);
+                    Constants.AppLogDirect(10, "   Setting alarm level to 20 (if not higher). Future value 2 is < than " + String.valueOf(threshold_low));
+                    alarm_note = " getting LOW";
+
+                    story_of_the_decision += "futurevalueStep1 is too low, therefore at least ALARM_MEDIUM" + " - ";
+                }
+            }
+
+            // NEW 19-02-2020. Checks if falling steady
+            if (alarm_level < ALARM_HIGH) {
+                int falling_steady_threshold = -20;
+                if ((sensor_Last_Estimate - sensor_Last_Estimate_Memory_2) < falling_steady_threshold) {
+                    // falling steady
+                    alarm_level = Math.max(ALARM_HIGH, alarm_level);
+                    alarm_note = " FALLING STEADY";
+
+                    Constants.AppLogDirect(10, "   Setting alarm level to 30 falling steady. Estimate " + String.valueOf(estimate) + " is < than " + String.valueOf(threshold_low));
+
+                    story_of_the_decision += "under falling steady threshold (TODO: study again) therefore at least ALARM_MAX" + " - ";
+                }
+            }
+
+            sensor_Last_Time = System.currentTimeMillis();
+
+            // TODO: Add the story of the decision
+            Constants.AppLogDirect(20, "   (end) EvaluateSensorAlarm with level " + String.valueOf(alarm_level) + " - STORY: " + story_of_the_decision);
+
+            if (alarm_level >= ALARM_HIGH) {
+                try {
+                    String msg_notification = "Verificare valori (" + alarm_note + ")";
+
+                    // log first
+                    Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + String.valueOf(alarm_level));
+
+                    // do after
+                    CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level);
+
+                } catch (Exception e) {
+                    Constants.AppLogDirect(20, "!!! AlarmManager exception: " + e.getMessage());
+                }
+            } else {
+                try {
+                    // BUGFIX 19/07/2019
+                    String msg_notification = "xDrip+ " + String.valueOf(estimate) + " slope " + String.valueOf(slope);
+                    CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level);
+
+                    Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + String.valueOf(alarm_level));
+                } catch (Exception e) {
+                    Constants.AppLogDirect(20, "!!! AlarmManager exception: " + e.getMessage());
+                }
             }
         }
-
-        sensor_Last_Time = System.currentTimeMillis();
-
-        Constants.AppLogDirect(0, "   (end) EvaluateSensorAlarm with level " + String.valueOf(alarm_level));
-
-        if (alarm_level >= ALARM_HIGH) {
-            try {
-                String msg_notification = "Verificare valori (" + alarm_note + ")";
-
-                // log first
-                Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + String.valueOf(alarm_level));
-
-                // do after
-                CreateNotification(ctx, Get_Last_Summary_Value(ctx),msg_notification, alarm_level);
-
-            } catch (Exception e) {
-                Constants.AppLogDirect(20, "!!! AlarmManager exception: " + e.getMessage());
-            }
-        }
-        else {
-            try {
-                // BUGFIX 19/07/2019
-                String msg_notification = "xDrip+ " + String.valueOf(estimate) + " slope " + String.valueOf(slope);
-                CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level);
-
-                Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + String.valueOf(alarm_level));
-            }
-            catch(Exception e)
-            {
-                Constants.AppLogDirect(20,"!!! AlarmManager exception: " + e.getMessage());
-            }
+        catch (Exception e)
+        {
+            Constants.AppLogDirect(20, "!!! AlarmManager.EvaluateSensorAlarm exception: " + e.getMessage());
         }
     }
 
@@ -514,13 +559,6 @@ public final class AlarmManager {
         if (FIRST_START == true)
         {
             String title = "Test: ";
-            //title += ctx.getString(R.string.slopem3) + " - ";
-        //    title += "\uD83E\uDC52" + " - ";
-        //    title += ctx.getString(R.string.slopem1) + " - ";
-        //    title += "\u21ca" + " - ";
-        //    title += ctx.getString(R.string.test) + " - ";
-
-            //CreateNotification(ctx, title, "Started", ALARM_ZERO);
 
             Constants.AppLog(2, title, ctx);
 
@@ -558,7 +596,6 @@ public final class AlarmManager {
         {
             return "Get_Last_Summary_Value Exception: " + e.getMessage();
         }
-
     }
 
     public static void Build_RF_Notification(Context ctx, String risktime, int alert_level, String notes) {
@@ -637,7 +674,7 @@ public final class AlarmManager {
             }
             else
             {
-                Constants.AppLogDirect(20, "Snoozing is off");
+                Constants.AppLogDirect(0, "Snoozing is off");
             }
         }
         catch (Exception e)
@@ -720,7 +757,8 @@ public final class AlarmManager {
             // Create an explicit intent for an Activity in your app
             Intent intent = new Intent(ctx, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            PendingIntent pendingIntent = PendingIntent.getActivity(ctx, 0, intent, 0);
+
+            PendingIntent pendingIntent = PendingIntent.getActivity(ctx, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
             // Important LOG. UPDATED 02/06/2022 v179
             Constants.AppLogDirect(10,"      sending notification with level " + alert_level + " and message " + message);
@@ -737,7 +775,7 @@ public final class AlarmManager {
                         .setSmallIcon(R.drawable.owl)
                         .setContentTitle(title)
                         .setContentText(message)
-                        .setVisibility(VISIBILITY_PUBLIC)
+                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                         // Set the intent that will fire when the user taps the notification
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(false);
@@ -756,7 +794,7 @@ public final class AlarmManager {
                         .setSmallIcon(R.drawable.owl)
                         .setContentTitle(title)
                         .setContentText(message)
-                        .setVisibility(VISIBILITY_PUBLIC)
+                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                         // Set the intent that will fire when the user taps the notification
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(false);
@@ -772,7 +810,7 @@ public final class AlarmManager {
                             .setSmallIcon(R.drawable.owl)
                             .setContentTitle(title)
                             .setContentText(message)
-                            .setVisibility(VISIBILITY_PUBLIC)
+                            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                             // Set the intent that will fire when the user taps the notification
                             .setContentIntent(pendingIntent)
                             .setAutoCancel(false);
@@ -790,7 +828,7 @@ public final class AlarmManager {
                                 .setSmallIcon(R.drawable.owl)
                                 .setContentTitle(title)
                                 .setContentText(message)
-                                .setVisibility(VISIBILITY_PUBLIC)
+                                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                                 // Set the intent that will fire when the user taps the notification
                                 .setContentIntent(pendingIntent)
                                 .setAutoCancel(false);
@@ -969,9 +1007,6 @@ public final class AlarmManager {
 
             for (int i = 0; i < ja.length(); i++)
             {
-
-                // TODO: tramutare queste letture in array
-
                 JSONObject jo = ja.getJSONObject(i);
 
                 // Ora si possono analizzare i vari intervalli futuri, ad ogni i 15 minuti
@@ -982,12 +1017,11 @@ public final class AlarmManager {
                     risktime_now = risktime_i;
                 }
 
-                // TODO: Lavorare sul valore LOWER o su IPORISK ?
+                //TODO: permettere la configurazione soglia IPORISK da menu
                 iporisk = Integer.parseInt(jo.getString("IPORISK"));
                 int previsione = Integer.parseInt(jo.getString("PREVISIONE"));
 
-
-                if (iporisk >= 1) {
+                if (iporisk >= Constants.IPORISK_TO_ALARM) {
                     // C'è un rischio di ipo, ma fra quanto ?
                     if (i < 2) {
                         // Entro la prossima mezz'ora
@@ -1123,8 +1157,6 @@ public final class AlarmManager {
                 Constants.AppLog(0,"         Setup: max bolo rate is " + String.valueOf(rate_bolo_max), ctx);
             }
 
-
-
             // DEBUG
             try {
                 Constants.AppLog(0, "         Alert level is " + String.valueOf(alert_level) + " with risktime = " + risktime +
@@ -1132,7 +1164,9 @@ public final class AlarmManager {
                 //Constants.AppLog(0, "   Alert level delta is " + String.valueOf(alert_level_delta), ctx);
             }
             catch(Exception e)
-            {}
+            {
+                Constants.AppLogDirect(20, e.getMessage());
+            }
 
             String notes = "";
             if (alert_type == 1)  // Gives alert for delta only if higher severity then the one on iporisk
@@ -1280,6 +1314,9 @@ public final class AlarmManager {
             String owl_interval = sharedPref.getString("owl_interval", "5");
             periodsToForecast = Integer.parseInt(owl_interval);
             Log.i(Constants.AppTAG, "PREFERENCE: owl interval set to " + owl_interval);
+
+            String ita = sharedPref.getString("iporisk_to_alarm", "2");
+            Constants.IPORISK_TO_ALARM = Integer.parseInt( ita );
 
             String wdl = sharedPref.getString("web_debug_level", "0");
             Constants.WEB_DEBUG_LEVEL = Integer.parseInt( wdl );

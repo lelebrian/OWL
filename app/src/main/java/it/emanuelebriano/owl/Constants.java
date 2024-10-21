@@ -75,6 +75,8 @@ public final class Constants {
     public static int WEB_DEBUG_LEVEL = 0;
     public static int APP_DEBUG_LEVEL = 2;
 
+    public static int IPORISK_TO_ALARM = 2;
+
 
     // Defines a custom Intent action
     public static final String BROADCAST_ACTION =
@@ -202,7 +204,8 @@ public final class Constants {
 
     public static void write_Exception_Log_To_Mail(String log)
     {
-        text_logs_collection += "\r\n" + log;
+        String currentTimeString = new SimpleDateFormat("HH:mm").format(new Date());
+        text_logs_collection += "\r\n" + currentTimeString + ": " + log;
     }
 
     // NEW 08/09/2022
@@ -219,38 +222,6 @@ public final class Constants {
         String s_text = text_logs_collection;
         emailIntent.putExtra(Intent.EXTRA_TEXT, s_text);
 
-        // Tries to retrieve attachments
-        /*
-        try {
-            String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
-            File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "OWL_LOGS");
-            if (directory.exists() && directory.isDirectory()) {
-                final Pattern p = Pattern.compile(currentDateString + "*.*");
-                File[] flists = directory.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File file) {
-                        return p.matcher(file.getName()).matches();
-                    }
-                });
-
-                // Converts file list in arraylist of Uri
-                ArrayList<Uri> urilist = new ArrayList<Uri>();
-                for (File f : flists)
-                {
-                    Uri path = Uri.fromFile(f);
-                    urilist.add(path);
-                }
-
-                emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, urilist);
-            }
-        }
-        catch (Exception e)
-        {
-            write_Exception_Log_To_Mail(e.getMessage());
-        }
-        */
-
         try {
             ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
 
@@ -266,40 +237,6 @@ public final class Constants {
     // NEW 08/09/2022
     // TODO: TEST
     public static void send_log_files_by_mail(Context ctx) {
-//
-//        try {
-//            Log.d(Constants.AppTAG, "sendLogs()");
-//
-//            String owl_Name = "OWL_logs";
-//            File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
-//            if (!directory.exists()) {
-//                Log.e(Constants.AppTAG, "WARNING! Directory does not exists !!!!");
-//            }
-//            else {
-//                Log.d(Constants.AppTAG, directory.getAbsolutePath() + " exists");
-//            }
-//            String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
-//            String currentTimeString = new SimpleDateFormat("HH:mm").format(new Date());
-//            String filename_1 = currentDateString + "_" + 20 + ".txt";
-//            String filename_2 = currentDateString + "_" + 10 + ".txt";
-//            String filename_3 = currentDateString + "_" + 10 + ".txt";
-//
-//            File filelocation_1 = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), filename_1);
-//            Uri path_1 = Uri.fromFile(filelocation_1);
-//            Intent emailIntent = new Intent(Intent.ACTION_SEND);
-//            // set the type to 'email'
-//            emailIntent.setType("vnd.android.cursor.dir/email");
-//            String to[] = {"emanuele.briano@gmail.com"};
-//            emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
-//            // the attachment
-//            emailIntent.putExtra(Intent.EXTRA_STREAM, path_1);
-//            // the mail subject
-//            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Owl logs");
-//            ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
-//        }
-//        catch (Exception e) {
-//            Log.e("Exception", "File write failed: " + e.toString());
-//        }
     }
 
 
@@ -313,30 +250,28 @@ public final class Constants {
         // TODO: TEST
         // NEW 08/09/2022. Writes in variable to be able to email it later
         if (level >= 20) {
-            write_Exception_Log_To_Mail(String.valueOf(level) + ": " + data);
+            write_Exception_Log_To_Mail(data);
         }
 
         try {
             Log.d(Constants.AppTAG, "writeToFile()");
 
-            // OLD working
-            //File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
             File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+            //File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
             //File directory = new File(owlContext.getExternalFilesDir("") + File.separator + owl_Name);
 
-            if(!directory.exists())
-            {
+            if(!directory.exists()) {
                 directory.mkdir();
                 Log.d(Constants.AppTAG,"Created " + directory.getAbsolutePath());
                 if(!directory.exists())
                 {
                     Log.e(Constants.AppTAG,"WARNING! Directory does not exists !!!!");
                 }
-            }
-            else
-            {
+            }   // creates directory if necessary
+            else {
                 Log.d(Constants.AppTAG,directory.getAbsolutePath() + " exists");
             }
+
             String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
             String currentTimeString = new SimpleDateFormat("HH:mm").format(new Date());
 

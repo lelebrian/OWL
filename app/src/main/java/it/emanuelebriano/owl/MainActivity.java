@@ -1,5 +1,6 @@
 package it.emanuelebriano.owl;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
@@ -15,6 +17,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -47,6 +50,7 @@ import androidx.work.WorkManager;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    private static final int REQUEST_CODE_NOTIFICATION_PERMISSION = 1001;
     Intent mServiceIntent;
 
     private DrawerLayout mDrawerLayout;
@@ -64,6 +68,12 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         Log.i(Constants.AppTAG, "Creating MainActivity() step 10");
+
+        // NEW 20/10/2024 for Android 13 - test!
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+        }
+        // end NEW
 
         setContentView(R.layout.activity_main2);
         Log.i(Constants.AppTAG, "Creating MainActivity() step 20");
@@ -123,6 +133,45 @@ public class MainActivity extends AppCompatActivity
 
         Log.i(Constants.AppTAG, "Trying to schedule job");
     }
+
+    private void requestStoragePermissionsForTiramisu() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_CODE_NOTIFICATION_PERMISSION);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO,
+                    Manifest.permission.READ_MEDIA_AUDIO
+            }, REQUEST_CODE_STORAGE_PERMISSION);
+        }
+    }
+
+    private void requestLegacyStoragePermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_STORAGE_PERMISSION);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, proceed with file writing
+            } else {
+                Log.e("Permission", "Storage permission denied");
+            }
+        }
+    }
+
 
     public void Restart_Workers(boolean force_Stop) {
         Constants.logToFile_Worker(10, "Restart_Workers()");
@@ -536,14 +585,17 @@ public class MainActivity extends AppCompatActivity
             // Also tests alarm
             AlarmManager.CreateNotification(this, "Test Alarm", "level = 20", 20);
         } else if (id == R.id.nav_test_alarm_high) {
-
-            //Constants.WebLog(2, "Testing Alarm High");
-
             Constants.AppLogDirect(0, "Testing Alarm High");
 
             // Also tests alarm
             AlarmManager.CreateNotification(this, "Test Alarm High", "High level = 30", 30);
-        } else if (id == R.id.nav_restart_workers) {
+        } else if (id == R.id.nav_test_alarm_max) {
+            Constants.AppLogDirect(0, "Testing Alarm Max");
+
+            // Also tests alarm
+            AlarmManager.CreateNotification(this, "Test Alarm Max", "Max level = 40", 40);
+        }
+        else if (id == R.id.nav_restart_workers) {
 
             Constants.AppLogDirect(10, "Restarting workers");
 
