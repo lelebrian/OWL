@@ -33,7 +33,7 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
-import static android.app.Notification.VISIBILITY_PUBLIC;
+//import static android.app.Notification.VISIBILITY_PUBLIC;
 
 // https://stackoverflow.com/questions/50567164/custom-notification-sound-not-working-in-oreo
 
@@ -62,7 +62,7 @@ public final class AlarmManager {
 
     // Read forecast
     public static String update_message = "A new version is available. Press to update";
-    public static int period = 1 * 60000;  // used by Service
+    public static int period = 60000;  // used by Service
     private static int periodsToForecast = 1;
     private static int periods_Elapsed = periodsToForecast;  // Do a first forecast
 
@@ -284,7 +284,9 @@ public final class AlarmManager {
 
                 CharSequence name = "OWLMaxChannel";
                 String description =  "OWL Max level notifications";
-                int importance = NotificationManager.IMPORTANCE_MAX;
+                //int importance = NotificationManager.IMPORTANCE_MAX;
+                // NEW Oct 2024, maybe an update for Android 13
+                int importance = NotificationManager.IMPORTANCE_HIGH;
 
                 NotificationManager mNotificationManager = ctx.getSystemService(NotificationManager.class);
                 NotificationChannel existingChannel = mNotificationManager.getNotificationChannel(CHANNEL_ID_Max);
@@ -939,9 +941,10 @@ public final class AlarmManager {
             CHECKRESPONSE_null_times++;
             Constants.AppLogDirect(10, "!!! CheckResponse called with null jSon. CHECKRESPONSE_null_times " + String.valueOf(CHECKRESPONSE_null_times), ctx);
 
-            if (CHECKRESPONSE_null_times <= CHECKRESPONSE_null_THRESHOLD)
+            if (CHECKRESPONSE_null_times <= CHECKRESPONSE_null_THRESHOLD) {
                 Constants.AppLogDirect(10, "   return;", ctx);
                 return;
+            }
         }
         else {
             CHECKRESPONSE_null_times = 0;

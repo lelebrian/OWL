@@ -11,6 +11,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import android.net.Uri;
+import androidx.core.content.FileProvider;
 
 import org.json.JSONObject;
 
@@ -245,17 +246,16 @@ public final class Constants {
     public static void send_log_by_mail(Context ctx) {
         try {
 
-        Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
-        emailIntent.setType("vnd.android.cursor.dir/email");
-        String[] to = {"emanuele.briano@gmail.com"};
-        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Owl logs");
-        String s_text = text_logs_collection;
-        emailIntent.putExtra(Intent.EXTRA_TEXT, s_text);
+            Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+            emailIntent.setType("vnd.android.cursor.dir/email");
+            String[] to = {"emanuele.briano@gmail.com"};
+            emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Owl logs");
+            String s_text = text_logs_collection;
+            emailIntent.putExtra(Intent.EXTRA_TEXT, s_text);
 
-        // Get today's date to filter log files
-        String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
-
+            // Get today's date to filter log files
+            String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
 
             // Directory where logs are stored
             File directory = new File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
@@ -268,7 +268,7 @@ public final class Constants {
                 if (files != null) {
                     for (File file : files) {
                         if (file.getName().startsWith(currentDateString)) {
-                            Uri fileUri = Uri.fromFile(file);
+                            Uri fileUri = FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".provider", file);
                             uris.add(fileUri);
                         }
                     }
@@ -277,8 +277,6 @@ public final class Constants {
                 // Add the log files as attachments
                 emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
             }
-
-
 
             ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
             text_logs_collection = ""; // Clear log collection after sending
