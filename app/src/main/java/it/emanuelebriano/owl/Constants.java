@@ -16,13 +16,18 @@ import androidx.core.content.FileProvider;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
+
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public final class Constants {
 
@@ -242,7 +247,7 @@ public final class Constants {
 
      */
 
-    // NEW 21/10/2024
+    /* NEW 21/10/2024
     public static void send_log_by_mail(Context ctx) {
         try {
 
@@ -291,6 +296,125 @@ public final class Constants {
                     .show();
         }
     }
+    */
+
+    // NEW 22/10/2024
+    public static void send_log_by_mail(final Context ctx) {
+        // Show a dialog to choose the period
+        new AlertDialog.Builder(ctx)
+                .setTitle("Select log period")
+                .setItems(new CharSequence[]{"Today", "Today and Yesterday", "1 Week", "All"},
+                        (dialog, which) -> {
+                            try {
+                                String selectedPeriod = "";
+                                switch (which) {
+                                    case 0:
+                                        selectedPeriod = "Today";
+                                        break;
+                                    case 1:
+                                        selectedPeriod = "Today and Yesterday";
+                                        break;
+                                    case 2:
+                                        selectedPeriod = "1 Week";
+                                        break;
+                                    case 3:
+                                        selectedPeriod = "All";
+                                        break;
+                                }
+
+                                Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+                                emailIntent.setType("vnd.android.cursor.dir/email");
+                                String[] to = {"emanuele.briano@gmail.com"};
+                                emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+                                emailIntent.putExtra(Intent.EXTRA_SUBJECT, "OWL_LOGS - " + selectedPeriod);
+                                emailIntent.putExtra(Intent.EXTRA_TEXT, text_logs_collection);
+
+                                // Get today's date to filter log files
+                                String currentDateString = new SimpleDateFormat("yyyyMMdd").format(new Date());
+
+                                // Directory where logs are stored
+                                File directory = new File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
+                                ArrayList<Uri> uris = new ArrayList<>();
+
+                                // Based on selection, filter logs
+                                if (directory.exists() && directory.isDirectory()) {
+                                    if (which == 0) {
+                                        // Today
+                                        collectLogs(uris, directory, currentDateString, ctx);
+                                    } else if (which == 1) {
+                                        // Today and Yesterday
+                                        collectLogs(uris, directory, currentDateString, ctx);
+                                        Calendar calendar = Calendar.getInstance();
+                                        calendar.add(Calendar.DAY_OF_MONTH, -1);
+                                        String yesterday = new SimpleDateFormat("yyyyMMdd").format(calendar.getTime());
+                                        collectLogs(uris, directory, yesterday, ctx);
+                                    } else if (which == 2) {
+                                        // 1 Week
+                                        Calendar calendar = Calendar.getInstance();
+                                        for (int i = 0; i < 7; i++) {
+                                            String date = new SimpleDateFormat("yyyyMMdd").format(calendar.getTime());
+                                            collectLogs(uris, directory, date, ctx);
+                                            calendar.add(Calendar.DAY_OF_MONTH, -1);
+                                        }
+                                    } else if (which == 3) {
+                                        // All: Zip the entire folder
+                                        File zipFile = zipLogs(directory);
+                                        Uri zipUri = FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".provider", zipFile);
+                                        uris.add(zipUri);
+                                    }
+                                }
+
+                                emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+                                ctx.startActivity(Intent.createChooser(emailIntent, "Send email..."));
+                                text_logs_collection = ""; // Clear log collection after sending
+                            } catch (Exception e) {
+                                logToFile(30, e.getMessage(), "Exception", ctx);
+
+                                // Show the exception in a popup dialog
+                                new AlertDialog.Builder(ctx)
+                                        .setTitle("Error")
+                                        .setMessage("Exception occurred: " + e.getMessage())
+                                        .setPositiveButton("OK", null)
+                                        .show();
+                            }
+                        }).show();
+    }
+
+    // Helper method to collect log files based on the date prefix
+    private static void collectLogs(ArrayList<Uri> uris, File directory, String datePrefix, Context ctx) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.getName().startsWith(datePrefix)) {
+                    Uri fileUri = FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".provider", file);
+                    uris.add(fileUri);
+                }
+            }
+        }
+    }
+
+    // Helper method to zip the log files
+    private static File zipLogs(File directory) throws IOException {
+        File zipFile = new File(directory.getParent(), "logs.zip");
+        try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    try (FileInputStream fis = new FileInputStream(file)) {
+                        ZipEntry zipEntry = new ZipEntry(file.getName());
+                        zipOut.putNextEntry(zipEntry);
+                        byte[] bytes = new byte[1024];
+                        int length;
+                        while ((length = fis.read(bytes)) >= 0) {
+                            zipOut.write(bytes, 0, length);
+                        }
+                    }
+                }
+            }
+        }
+        return zipFile;
+    }
+
 
     // NEW 08/09/2022
     // TODO: TEST
