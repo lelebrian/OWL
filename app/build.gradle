@@ -9,9 +9,11 @@ android {
         minSdkVersion 30
         targetSdkVersion 33
 
-        versionCode 200
-        versionName "200"
+        versionCode 201
+        versionName "201"
 
+        // 201 Some logs for notify() to understand why the snoozing is not always working
+        // 200 Working traces with zip too of the logs
         // 199 Restore write trace using new way to send logs by mail
         // 198 Restore write trace after Android 13 (not working)
         // 197 Stupid Android 13 (blocking notification)

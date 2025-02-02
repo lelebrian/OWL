@@ -444,7 +444,7 @@ public final class AlarmManager {
 
             }
 
-            // Calculates the estimate in 30 and 60 minutes
+            // Calculates the estimate in 30 (step1) and 60 minutes (step2)
             // Base version. slope_factor_hour = 60, slope_minutes_Step1 = 30
             float future_value_Step1 = estimate + (slope_factor_hour * ((float) slope_minutes_Step1 / (float) 60) * slope);
             float future_value_Step2 = estimate + (slope_factor_hour * ((float) slope_minutes_Step2 / (float) 60) * slope);
@@ -656,7 +656,6 @@ public final class AlarmManager {
         long l_Now = System.currentTimeMillis();
         long l_OneMinute = 60 * 1000;
 
-
         // NEW 08/09/2022 SNOOZE
         try {
             if (last_Snooze_Interval != 0)
@@ -685,7 +684,7 @@ public final class AlarmManager {
             d_msg = " - (D) " + e.getMessage();
         }
 
-            try {
+        try {
             // NEW 16/07/2019
             ReadPreferences(Constants.owlContext);
 
@@ -785,6 +784,10 @@ public final class AlarmManager {
                         //.setSound(alarmSound_High); // NEW 28-02-2020
 
                 NotificationManagerCompat notificationManager = NotificationManagerCompat.from(ctx);
+
+                // NEW 2025 for log
+                Constants.AppLogDirect(20, "notify 789 (" + message + ", " + String.valueOf(alert_level) + ")", ctx);
+
                 // notificationId is a unique int for each notification that you must define
                 notificationManager.notify(notificationId_High, mBuilder.build());
 
@@ -802,6 +805,10 @@ public final class AlarmManager {
                         .setAutoCancel(false);
 
                 NotificationManagerCompat notificationManager = NotificationManagerCompat.from(ctx);
+
+                // NEW 2025 for log
+                Constants.AppLogDirect(20, "notify 810 (" + message + ", " + String.valueOf(alert_level) + ")", ctx);
+
                 // notificationId is a unique int for each notification that you must define
                 notificationManager.notify(notificationId_Medium, mBuilder.build());
 
@@ -818,6 +825,10 @@ public final class AlarmManager {
                             .setAutoCancel(false);
 
                     NotificationManagerCompat notificationManager = NotificationManagerCompat.from(ctx);
+
+                    // NEW 2025 for log
+                    Constants.AppLogDirect(20, "notify 830 (" + message + ", " + String.valueOf(alert_level) + ")", ctx);
+
                     // notificationId is a unique int for each notification that you must define
                     notificationManager.notify(notificationId_Low, mBuilder.build());
                 }
@@ -836,6 +847,10 @@ public final class AlarmManager {
                                 .setAutoCancel(false);
 
                         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(ctx);
+
+                        // NEW 2025 for log
+                        Constants.AppLogDirect(20, "notify 852 (" + message + ", " + String.valueOf(alert_level) + ")", ctx);
+
                         // notificationId is a unique int for each notification that you must define
                         notificationManager.notify(notificationId_Low, mBuilder.build());
                     }

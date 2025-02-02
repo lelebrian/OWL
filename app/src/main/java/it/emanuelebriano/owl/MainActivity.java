@@ -534,7 +534,7 @@ public class MainActivity extends AppCompatActivity
             UpdateSnoozeButton();
         } else if (id == R.id.nav_snooze_15) {
 
-            Constants.AppLogDirect(0, "Snooze 30 pressed", getApplicationContext());
+            Constants.AppLogDirect(0, "Snooze 15 pressed", getApplicationContext());
 
             // Sets the snooze
             AlarmManager.setSnooze(15, getApplicationContext());
