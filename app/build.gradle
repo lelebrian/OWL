@@ -9,8 +9,8 @@ android {
         minSdkVersion 30
         targetSdkVersion 33
 
-        versionCode 202
-        versionName "202"
+        versionCode 204
+        versionName "204"
 
         // 202 corrected when values at t-15 and t-30 are not present
         // 201 Some logs for notify() to understand why the snoozing is not always working
