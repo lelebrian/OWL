@@ -448,7 +448,7 @@ public final class AlarmManager {
             // Base version. slope_factor_hour = 60, slope_minutes_Step1 = 30
             float future_value_Step1 = estimate + (slope_factor_hour * ((float) slope_minutes_Step1 / (float) 60) * slope);
             float future_value_Step2 = estimate + (slope_factor_hour * ((float) slope_minutes_Step2 / (float) 60) * slope);
-            if ((estimate_past_15 == -1)) {  // 14102025 changed, now just checks is value at -15 is present
+            if (estimate_past_15 == -1) {  // 14102025 changed, now just checks is value at -15 is present
                 if (estimate_past_30 != -1) {
                     // Calcola il Delta per minuto basato sul solo valore past_30
                     float delta_per_minute = (float) (estimate - estimate_past_30) / (float) 30;
@@ -458,19 +458,19 @@ public final class AlarmManager {
 
                     Constants.AppLogDirect(10, "      Value t-15 is not present, delta per minute corrected calculated on t-30 is " + String.valueOf(delta_per_minute_corrected), ctx);
 
-                    // NEW in 202 14/10/2025
-                    future_value_Step1 = estimate - (slope_minutes_Step1 * delta_per_minute_corrected);
-                    future_value_Step2 = estimate - (slope_minutes_Step2 * delta_per_minute_corrected);
+                    // NEW in 204 14/10/2025
+                    future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
+                    future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
                 }
                 else {
+                    // Here we don't have values at t-15 and t-30
                     Constants.AppLogDirect(10, "      Values t-15 and t-30 are not present, applying standard delta of -15 and -30", ctx);
 
-                    float delta_per_minute_corrected = 0.5f;
+                    float delta_per_minute_corrected = - (float)slope_factor_hour / 60f; // new in 204
 
-                    // NEW in 202 14/10/2025
-                    future_value_Step1 = estimate - (slope_minutes_Step1 * delta_per_minute_corrected);
-                    future_value_Step2 = estimate - (slope_minutes_Step2 * delta_per_minute_corrected);
-                    // QUI NON ABBIAMO NE t-15 NE t-30
+                    // NEW in 204 14/10/2025
+                    future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
+                    future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
                 }
                 // TODO
                 story_of_the_decision += "futurevalueStep1 (old) is " + String.valueOf(future_value_Step1) + " - ";
