@@ -448,20 +448,44 @@ public final class AlarmManager {
             // Base version. slope_factor_hour = 60, slope_minutes_Step1 = 30
             float future_value_Step1 = estimate + (slope_factor_hour * ((float) slope_minutes_Step1 / (float) 60) * slope);
             float future_value_Step2 = estimate + (slope_factor_hour * ((float) slope_minutes_Step2 / (float) 60) * slope);
-            if ((estimate_past_15 == -1) || (estimate_past_30 == -1)) {
-                // Stick to the base version
+            if ((estimate_past_15 == -1)) {  // 14102025 changed, now just checks is value at -15 is present
+                if (estimate_past_30 != -1) {
+                    // Calcola il Delta per minuto basato sul solo valore past_30
+                    float delta_per_minute = (float) (estimate - estimate_past_30) / (float) 30;
+                    // aggiunge un coefficiente peggiorativo
+                    float delta_increase = delta_per_minute / 2;
+                    float delta_per_minute_corrected = delta_per_minute + delta_increase;
+
+                    Constants.AppLogDirect(10, "      Value t-15 is not present, delta per minute corrected calculated on t-30 is " + String.valueOf(delta_per_minute_corrected), ctx);
+
+                    // NEW in 202 14/10/2025
+                    future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
+                    future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
+                }
+                else {
+                    Constants.AppLogDirect(10, "      Values t-15 and t-30 are not present, applying standard delta of -15 and -30", ctx);
+
+                    float delta_per_minute_corrected = 0.5f;
+
+                    // NEW in 202 14/10/2025
+                    future_value_Step1 = estimate + (slope_minutes_Step1 * delta_per_minute_corrected);
+                    future_value_Step2 = estimate + (slope_minutes_Step2 * delta_per_minute_corrected);
+                    // QUI NON ABBIAMO NE t-15 NE t-30
+                }
+                // TODO
                 story_of_the_decision += "futurevalueStep1 (old) is " + String.valueOf(future_value_Step1) + " - ";
                 story_of_the_decision += "futurevalueStep2 (old) is " + String.valueOf(future_value_Step2) + " - ";
             } else {
+                // Calcola il Delta per minuto basato sul solo valore past_15
                 float delta_per_minute = (float) (estimate - estimate_past_15) / (float) 15;
                 // aggiunge un coefficiente peggiorativo se non vi è il valore a -30
-                // o se il delta è in aumento negativo
+                // o se il delta è in aumento negativo, pari a +delta/2
                 float delta_increase = delta_per_minute / 2;
                 if (estimate_past_30 != -1) {
-                    // Se lo abbiamo, calcola l'incremento di delta
+                    // Se lo abbiamo, calcola l'incremento di delta al minuto fra -30 e -15 minuti
                     float delta_per_minute_old = (float) (estimate_past_15 - estimate_past_30) / (float) 15;
 
-                    Constants.AppLogDirect(10, "      delta per minute old is " + String.valueOf(delta_per_minute_old), ctx);
+                    Constants.AppLogDirect(10, "      delta per minute -30 to -15 is " + String.valueOf(delta_per_minute_old), ctx);
 
                     if (delta_per_minute_old < delta_per_minute)
                         delta_increase = 0; // annulla il coefficiente peggiorativo
