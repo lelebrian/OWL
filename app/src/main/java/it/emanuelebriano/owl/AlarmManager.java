@@ -1,5 +1,7 @@
 package it.emanuelebriano.owl;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -38,6 +40,9 @@ import java.text.ParseException;
 // https://stackoverflow.com/questions/50567164/custom-notification-sound-not-working-in-oreo
 
 public final class AlarmManager {
+
+    private static final String PREFS_NAME = "my_prefs";
+    private static final String KEY_SNOOZE_UNTIL = "snooze_until";
 
     public static int THRESHOLD_VALUE_1 = 160;
     public static int THRESHOLD_DELTA_1 = -15;
@@ -92,8 +97,8 @@ public final class AlarmManager {
 
     public static int last_Alarm_Level = 0;
     public static long last_Alarm_Time = 0;
-    public static long last_Snooze_Time = 0;
-    public static long last_Snooze_Interval = 0;
+    // public static long last_Snooze_Time = 0;
+    //public static long last_Snooze_Interval = 0;
 
     public static int threshold_low = 90;
     public static int slope_factor_hour = 45;  // new in 203
@@ -145,16 +150,61 @@ public final class AlarmManager {
             createNotificationChannel_Low(ctx);
     }
 
-    public static void setSnooze(int interval, Context ctx)
+    public static void addSnoozeMinutes(int minutes, Context ctx)
     {
-        Constants.AppLogDirect(30, "   AlarmManager.setSnooze(" + String.valueOf(interval) + ")", ctx);
+        Constants.AppLogDirect(30, "   AlarmManager.setSnooze(" + String.valueOf(minutes) + ")", ctx);
 
-        last_Snooze_Time = System.currentTimeMillis();
-        //long l_OneMinute = 60 * 1000;
-        last_Snooze_Interval = interval;
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+        long now = System.currentTimeMillis();
+        long savedTimestamp = prefs.getLong(KEY_SNOOZE_UNTIL, -1L);
+
+        long baseTimestamp;
+        if (savedTimestamp <= now) {
+            baseTimestamp = now;
+        } else {
+            baseTimestamp = savedTimestamp;
+        }
+
+        long newTimestamp = baseTimestamp + minutes * 60L * 1000L;
+
+        prefs.edit()
+                .putLong(KEY_SNOOZE_UNTIL, newTimestamp)
+                .commit();
+
+        //last_Snooze_Time = System.currentTimeMillis();
+        //last_Snooze_Interval = interval;
     }
 
-    public static int get_Snooze_Left()
+    public static long getSnoozeUntil(Context ctx) {
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return prefs.getLong(KEY_SNOOZE_UNTIL, -1L);
+    }
+
+    public static boolean isSnoozed(Context ctx) {
+        long now = System.currentTimeMillis();
+        long snoozeUntil = getSnoozeUntil(ctx);
+        return snoozeUntil > now;
+    }
+
+    public static int getSnoozeLeftMinutes(Context ctx) {
+        long now = System.currentTimeMillis();
+        long snoozeUntil = getSnoozeUntil(ctx);
+
+        if (snoozeUntil <= now) {
+            return 0;
+        }
+
+        long millisLeft = snoozeUntil - now;
+        return (int) Math.ceil(millisLeft / 60000.0);
+    }
+
+    public static void clearSnooze(Context ctx) {
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().remove(KEY_SNOOZE_UNTIL).commit();
+    }
+
+    /*public static int get_Snooze_Left()
     {
         if (last_Snooze_Interval != 0)
         {
@@ -170,7 +220,7 @@ public final class AlarmManager {
         {
             return -1;
         }
-    }
+    }*/
 
     private static void createNotificationChannel_Low(Context ctx) {
         try {
@@ -681,7 +731,7 @@ public final class AlarmManager {
         long l_OneMinute = 60 * 1000;
 
         // NEW 08/09/2022 SNOOZE
-        try {
+        /*try {
             if (last_Snooze_Interval != 0)
             {
                 int minutes_elapsed_from_last_snooze = (int) ((l_Now - last_Snooze_Time) / l_OneMinute);
@@ -699,6 +749,24 @@ public final class AlarmManager {
             }
             else
             {
+                Constants.AppLogDirect(0, "Snoozing is off", ctx);
+            }
+        }
+        catch (Exception e)
+        {
+            Constants.AppLogDirect(20, "!!! CreateNotification Exception step SNOOZE " + e.getMessage(), ctx);
+            d_msg = " - (D) " + e.getMessage();
+        }*/
+
+        //New 11/04/2026
+        try {
+            long snoozeUntil = getSnoozeUntil(ctx);
+
+            if (snoozeUntil > l_Now) {
+                int minutesLeft = (int) Math.ceil((snoozeUntil - l_Now) / 60000.0);
+                Constants.AppLogDirect(20, "Snoozing active. " + minutesLeft + " minutes left", ctx);
+                return;
+            } else {
                 Constants.AppLogDirect(0, "Snoozing is off", ctx);
             }
         }

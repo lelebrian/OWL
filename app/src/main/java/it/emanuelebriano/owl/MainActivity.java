@@ -461,11 +461,12 @@ public class MainActivity extends AppCompatActivity
         MenuItem item = navigationView.getMenu().findItem(R.id.nav_snooze_0);
 
         if (item != null) {
-            int left = AlarmManager.get_Snooze_Left();
-            if (left < 0) {
+            int left = AlarmManager.getSnoozeLeftMinutes(this);
+
+            if (left <= 0) {
                 item.setTitle("NOTIFY");
             } else {
-                item.setTitle("NOTIFY (" + String.valueOf(left) + ")");
+                item.setTitle("NOTIFY (" + left + ")");
             }
         }
         else
@@ -529,7 +530,7 @@ public class MainActivity extends AppCompatActivity
             Constants.AppLogDirect(0, "Snooze 0 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(0, getApplicationContext());
+            AlarmManager.clearSnooze(getApplicationContext());
 
             UpdateSnoozeButton();
         } else if (id == R.id.nav_snooze_15) {
@@ -537,7 +538,7 @@ public class MainActivity extends AppCompatActivity
             Constants.AppLogDirect(0, "Snooze 15 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(15, getApplicationContext());
+            AlarmManager.addSnoozeMinutes(15, getApplicationContext());
 
             UpdateSnoozeButton();
 
@@ -557,7 +558,7 @@ public class MainActivity extends AppCompatActivity
             Constants.AppLogDirect(0, "Snooze 30 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(30, getApplicationContext());
+            AlarmManager.addSnoozeMinutes(30, getApplicationContext());
 
             UpdateSnoozeButton();
 
@@ -577,7 +578,7 @@ public class MainActivity extends AppCompatActivity
             Constants.AppLogDirect(0, "Snooze 60 pressed", getApplicationContext());
 
             // Sets the snooze
-            AlarmManager.setSnooze(60, getApplicationContext());
+            AlarmManager.addSnoozeMinutes(60, getApplicationContext());
 
             UpdateSnoozeButton();
 
