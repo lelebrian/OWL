@@ -93,6 +93,13 @@ public class MainActivity extends AppCompatActivity
         mDrawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
+        mDrawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerOpened(@NonNull View drawerView) {
+                refreshSnoozeDrawerItem();
+            }
+        });
+
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -138,6 +145,12 @@ public class MainActivity extends AppCompatActivity
                 mMessageReceiver, new IntentFilter("AddLog"));
 
         Log.i(Constants.AppTAG, "Trying to schedule job");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshSnoozeDrawerItem();
     }
 
     private void requestStoragePermissionsForTiramisu() {
@@ -542,7 +555,7 @@ public class MainActivity extends AppCompatActivity
 
             UpdateSnoozeButton();
 
-            new CountDownTimer(15*60*1000, 60*1000) {
+            /*new CountDownTimer(15*60*1000, 60*1000) {
 
                 public void onTick(long millisUntilFinished) {
                     UpdateSnoozeButton();
@@ -552,7 +565,7 @@ public class MainActivity extends AppCompatActivity
                     UpdateSnoozeButton();
                 }
 
-            }.start();
+            }.start();*/
         } else if (id == R.id.nav_snooze_30) {
 
             Constants.AppLogDirect(0, "Snooze 30 pressed", getApplicationContext());
@@ -562,7 +575,7 @@ public class MainActivity extends AppCompatActivity
 
             UpdateSnoozeButton();
 
-            new CountDownTimer(30*60*1000, 60*1000) {
+            /*new CountDownTimer(30*60*1000, 60*1000) {
 
                 public void onTick(long millisUntilFinished) {
                     UpdateSnoozeButton();
@@ -572,7 +585,7 @@ public class MainActivity extends AppCompatActivity
                     UpdateSnoozeButton();
                 }
 
-            }.start();
+            }.start();*/
         } else if (id == R.id.nav_snooze_60) {
 
             Constants.AppLogDirect(0, "Snooze 60 pressed", getApplicationContext());
@@ -582,7 +595,7 @@ public class MainActivity extends AppCompatActivity
 
             UpdateSnoozeButton();
 
-            new CountDownTimer(60*60*1000, 60*1000) {
+            /*new CountDownTimer(60*60*1000, 60*1000) {
 
                 public void onTick(long millisUntilFinished) {
                     UpdateSnoozeButton();
@@ -592,7 +605,7 @@ public class MainActivity extends AppCompatActivity
                     UpdateSnoozeButton();
                 }
 
-            }.start();
+            }.start();*/
         } else if (id == R.id.nav_test_alarm) {
 
             Constants.AppLogDirect(0, "Testing Alarm", getApplicationContext());
@@ -621,6 +634,30 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    public void refreshSnoozeDrawerItem() {
+        try {
+            NavigationView navigationView = findViewById(R.id.nav_view);
+            if (navigationView == null) {
+                return;
+            }
+
+            MenuItem item = navigationView.getMenu().findItem(R.id.nav_snooze_0);
+            if (item == null) {
+                return;
+            }
+
+            int left = AlarmManager.getSnoozeLeftMinutes(this);
+
+            if (left <= 0) {
+                item.setTitle("NOTIFY");
+            } else {
+                item.setTitle("NOTIFY (" + left + ")");
+            }
+        } catch (Exception e) {
+            Constants.write_Exception_Log_To_Mail(e.getMessage());
+        }
     }
 
     public static String check_and_update(Context ctx) {
