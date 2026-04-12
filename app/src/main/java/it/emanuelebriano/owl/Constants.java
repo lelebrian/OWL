@@ -2,11 +2,10 @@ package it.emanuelebriano.owl;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Environment;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import android.util.Log;
 import android.widget.Toast;
 
@@ -35,13 +34,12 @@ public final class Constants {
     private static String text_logs_collection;
 
     // turn on to write Web Log, off for faster app
-    private static boolean WEBLOG_GLOBAL_ON = false;
+    private static final boolean WEBLOG_GLOBAL_ON = false;
 
     public static OwlBroadcastReceiver myOwlBroadcastReceiver = null;
     public static long bl_now;
     public static long bl_last;
     public static int bl_span;
-    public static int bl_SPAN_SECONDS_RESTART = 11 * 60;
 
     public static boolean KILL_DUPLICATE = false;
 
@@ -54,10 +52,7 @@ public final class Constants {
 
     public static boolean IsFirstLaunch()
     {
-        if (randomID == 0)
-            return true;
-        else
-            return false;
+        return randomID == 0;
     }
 
     public static void Initialise(String version)
@@ -80,7 +75,7 @@ public final class Constants {
     public static final String AppTAG = "it.emanuelebriano.OWL";
 
 
-    private static final ArrayList<String> logs = new ArrayList<String>();
+    private static final ArrayList<String> logs = new ArrayList<>();
     public static String lastAppLog = "";
 
     public static int WEB_DEBUG_LEVEL = 0;
@@ -88,34 +83,6 @@ public final class Constants {
 
     public static int IPORISK_TO_ALARM = 2;
 
-
-    // Defines a custom Intent action
-    public static final String BROADCAST_ACTION =
-            "com.example.android.threadsample.BROADCAST";
-    // Defines the key for the status "extra" in an Intent
-    public static final String EXTENDED_DATA_STATUS =
-            "com.example.android.threadsample.STATUS";
-
-
-    public static ArrayList<String> Get_AppLog()
-    {
-        try {
-            if (logs.size() > 1)
-            {
-                for (int i = logs.size() - 1; i >= 1; i--) {
-                    if (logs.get(i) == logs.get(i - 1)) {
-                        logs.remove(i);
-                    }
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            Log.e(Constants.AppTAG, "Get_AppLog: " + e.getMessage());
-        }
-
-        return logs;
-    }
 
     public static void Add_AppLog(String message)
     {
@@ -132,12 +99,12 @@ public final class Constants {
     // 10 for exception
     // 2 for normal important message
     // 0 for debug only
-    private static void WebLog(int level, String message)
+    private static void WebLog(int level, String msg)
     {
         if (WEBLOG_GLOBAL_ON) {
             Log.i(Constants.AppTAG, "Weblog() called");
 
-            message = "(" + level + ") " + message;
+            String message = "(" + level + ") " + msg;
 
             if (level >= WEB_DEBUG_LEVEL) {
                 Weblog Task = new Weblog(message, "", new JSONObject());
@@ -153,28 +120,7 @@ public final class Constants {
 
     public static void AppLog(int level, String message, Context ctx)
     {
-        boolean use_New = true;
-
-        if (use_New)
-        {
-            AppLogDirect(level, message, ctx);
-        }
-        else {
-            Log.i(AppTAG, "AppLog called()");
-
-            // Sometimes, also traces it to the app
-            if (level >= APP_DEBUG_LEVEL) {
-                Intent intent = new Intent("AddLog");
-                intent.putExtra("message", message);
-                LocalBroadcastManager.getInstance(ctx).sendBroadcast(intent);
-            }
-
-            if (WEB_DEBUG_LEVEL == 0) {
-                ToastLog(message, ctx);
-
-                logToFile(level, message, String.valueOf(level), ctx);
-            }
-        }
+        AppLogDirect(level, message, ctx);
     }
 
     public static void AppLogDirect(int level, String message, Context ctx)
@@ -415,19 +361,10 @@ public final class Constants {
         return zipFile;
     }
 
-
-    // NEW 08/09/2022
-    // TODO: TEST
-    public static void send_log_files_by_mail(Context ctx) {
-    }
-
-
     /// ***
     /// Logs to txt file in phone
     /// ***
     private static void logToFile(int level, String data, String level_name, Context context) {
-
-        String owl_Name = "OWL_logs";
 
         // TODO: TEST
         // NEW 08/09/2022. Writes in variable to be able to email it later
@@ -440,15 +377,7 @@ public final class Constants {
 
             // NEW Android 13
             File directory;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                directory = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
-            } else {
-                directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
-            }
-
-            //File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
-            //File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + owl_Name);
-            //File directory = new File(owlContext.getExternalFilesDir("") + File.separator + owl_Name);
+            directory = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "OWL_LOGS");
 
             if(!directory.exists()) {
                 directory.mkdir();
@@ -477,7 +406,7 @@ public final class Constants {
                 } catch (IOException e) {
                     Log.e(Constants.AppTAG,e.getMessage());
 
-                    write_Exception_Log_To_Mail("File write failed: " + e.toString());
+                    write_Exception_Log_To_Mail("File write failed: " + e);
                 }
             }
             else
@@ -488,7 +417,7 @@ public final class Constants {
             try  {
                 FileOutputStream fOut = new  FileOutputStream( newFile, true ); // NECESSARY CONSTRUCTOR TO APPEND
                 OutputStreamWriter outputWriter=new OutputStreamWriter(fOut);
-                outputWriter.append(currentTimeString + ": (" + String.valueOf(level) + ") " + data);
+                outputWriter.append(currentTimeString + ": (" + level + ") " + data);
                 outputWriter.append("\n\r");
                 outputWriter.close();
 
@@ -498,13 +427,13 @@ public final class Constants {
             }catch (Exception e){
                 Log.e(Constants.AppTAG, e.getMessage());
 
-                write_Exception_Log_To_Mail("File write failed: " + e.toString());
+                write_Exception_Log_To_Mail("File write failed: " + e);
             }
         }
         catch (Exception e) {
-            Log.e("Exception", "File write failed: " + e.toString());
+            Log.e("Exception", "File write failed: " + e);
 
-            write_Exception_Log_To_Mail("File write failed: " + e.toString());
+            write_Exception_Log_To_Mail("File write failed: " + e);
         }
     }
 
@@ -549,7 +478,7 @@ public final class Constants {
             try  {
                 FileOutputStream fOut = new  FileOutputStream( newFile, true ); // NECESSARY CONSTRUCTOR TO APPEND
                 OutputStreamWriter outputWriter=new OutputStreamWriter(fOut);
-                outputWriter.append(currentTimeString + ": (" + String.valueOf(level) + ") " + data);
+                outputWriter.append(currentTimeString + ": (" + level + ") " + data);
                 outputWriter.append("\n\r");
                 outputWriter.close();
 
@@ -562,7 +491,7 @@ public final class Constants {
         }
         catch (Exception e) {
             write_Exception_Log_To_Mail(e.getMessage());
-            Log.e("Exception", "File write failed: " + e.toString());
+            Log.e("Exception", "File write failed: " + e);
         }
     }
 
