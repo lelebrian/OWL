@@ -467,27 +467,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        // Refresh the menu, especially the Snooze minutes left
-        Constants.AppLogDirect(20, "On Prepare Options Menu", getApplicationContext());
-
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        MenuItem item = navigationView.getMenu().findItem(R.id.nav_snooze_0);
-
-        if (item != null) {
-            int left = AlarmManager.getSnoozeLeftMinutes(this);
-
-            if (left <= 0) {
-                item.setTitle("NOTIFY");
-            } else {
-                item.setTitle("NOTIFY (" + left + ")");
-            }
-        }
-        else
-        {
-            Constants.AppLogDirect(20, "nav_snooze_0 not found in menu", getApplicationContext());
-            Constants.AppLogDirect(20, "Item 0 is " + menu.getItem(0).getItemId(), getApplicationContext());
-        }
-
+        refreshSnoozeDrawerItem();
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -546,6 +526,10 @@ public class MainActivity extends AppCompatActivity
             AlarmManager.clearSnooze(getApplicationContext());
 
             UpdateSnoozeButton();
+        } else if (id == R.id.nav_alarm_under_100) {
+            boolean enabled = !AlarmManager.isAlarmUnder99Enabled(this);
+            AlarmManager.setAlarmUnder99Enabled(this, enabled);
+            refreshSnoozeDrawerItem();
         } else if (id == R.id.nav_snooze_15) {
 
             Constants.AppLogDirect(0, "Snooze 15 pressed", getApplicationContext());
@@ -622,6 +606,8 @@ public class MainActivity extends AppCompatActivity
 
             // Also tests alarm
             AlarmManager.CreateNotification(this, "Test Alarm Max", "Max level = 40", 40);
+        } else if (id == R.id.nav_test_value_85) {
+            AlarmManager.TestValue85(this);
         }
         else if (id == R.id.nav_restart_workers) {
 
@@ -643,17 +629,18 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
 
-            MenuItem item = navigationView.getMenu().findItem(R.id.nav_snooze_0);
-            if (item == null) {
-                return;
+            Menu drawerMenu = navigationView.getMenu();
+            MenuItem notifyItem = drawerMenu.findItem(R.id.nav_snooze_0);
+            if (notifyItem != null) {
+                int left = AlarmManager.getSnoozeLeftMinutes(this);
+                notifyItem.setTitle(left <= 0 ? "NOTIFY" : "NOTIFY (" + left + ")");
             }
 
-            int left = AlarmManager.getSnoozeLeftMinutes(this);
-
-            if (left <= 0) {
-                item.setTitle("NOTIFY");
-            } else {
-                item.setTitle("NOTIFY (" + left + ")");
+            MenuItem bypassItem = drawerMenu.findItem(R.id.nav_alarm_under_100);
+            if (bypassItem != null) {
+                boolean enabled = AlarmManager.isAlarmUnder99Enabled(this);
+                bypassItem.setChecked(enabled);
+                bypassItem.setTitle(enabled ? "ALARM UNDER 100" : "SNOOZE UNDER 100");
             }
         } catch (Exception e) {
             Constants.write_Exception_Log_To_Mail(e.getMessage());

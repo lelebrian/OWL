@@ -22,11 +22,16 @@
             android:title="SEND LOGS BY MAIL" />
     </group>
 
-    <group android:checkableBehavior="single">
+    <group android:checkableBehavior="none">
         <item
             android:id="@+id/nav_snooze_0"
             android:icon="@drawable/ic_notify_high"
             android:title="NOTIFY ON" />
+
+        <item
+            android:id="@+id/nav_alarm_under_100"
+            android:checkable="true"
+            android:title="ALARM UNDER 100" />
 
         <item
             android:id="@+id/nav_snooze_15"
@@ -64,6 +69,11 @@
             android:id="@+id/nav_test_alarm_max"
             android:icon="@drawable/ic_notify_high"
             android:title="Test Alarm Max" />
+
+        <item
+            android:id="@+id/nav_test_value_85"
+            android:icon="@drawable/ic_notify_high"
+            android:title="Test Value 85" />
 
         <item
             android:id="@+id/nav_restart_workers"

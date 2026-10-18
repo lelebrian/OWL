@@ -46,7 +46,7 @@ public class OwlBroadcastReceiver extends BroadcastReceiver {
             Constants.AppLogDirect(0, "   Action is " + action, ctx);
             // *** //
 
-            if (action == "com.eveningoutpost.dexdrip.BgEstimate") {
+            if ("com.eveningoutpost.dexdrip.BgEstimate".equals(action)) {
                 // Segnala che la lettura è avvenuta
                 AlarmManager.tLast_MiaoMiao_Received = System.currentTimeMillis();
 

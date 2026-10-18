@@ -32,6 +32,7 @@ import java.util.Calendar;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -45,6 +46,7 @@ public final class AlarmManager {
 
     private static final String PREFS_NAME = "my_prefs";
     private static final String KEY_SNOOZE_UNTIL = "snooze_until";
+    private static final String KEY_ALARM_UNDER_99 = "alarm_under_99";
 
     public static int THRESHOLD_VALUE_1 = 160;
     public static int THRESHOLD_DELTA_1 = -15;
@@ -188,6 +190,69 @@ public final class AlarmManager {
     public static void clearSnooze(Context ctx) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         prefs.edit().remove(KEY_SNOOZE_UNTIL).apply();
+    }
+
+    public static boolean isAlarmUnder99Enabled(Context ctx) {
+        return ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(KEY_ALARM_UNDER_99, true);
+    }
+
+    public static void setAlarmUnder99Enabled(Context ctx, boolean enabled) {
+        ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit().putBoolean(KEY_ALARM_UNDER_99, enabled).apply();
+    }
+
+    // The development-menu test must not change the next genuine reading's history.
+    private static final class SensorStateSnapshot {
+        private final long lastTime = sensor_Last_Time;
+        private final int lastEstimate = sensor_Last_Estimate;
+        private final int lastSlope = sensor_Last_Slope;
+        private final int trend = sensor_Trend;
+        private final String memoryTimeCheck = sensor_Last_Estimate_Memory_time_check;
+        private final int[] memory = {
+                sensor_Last_Estimate_Memory_1, sensor_Last_Estimate_Memory_2,
+                sensor_Last_Estimate_Memory_3, sensor_Last_Estimate_Memory_4,
+                sensor_Last_Estimate_Memory_5, sensor_Last_Estimate_Memory_6,
+                sensor_Last_Estimate_Memory_7, sensor_Last_Estimate_Memory_8
+        };
+        private final LinkedHashMap<String, Integer> readings =
+                new LinkedHashMap<>(hashmap_Sensor_Readings);
+        private final int lastAlarmLevel = last_Alarm_Level;
+        private final long lastAlarmTime = last_Alarm_Time;
+
+        private void restore() {
+            sensor_Last_Time = lastTime;
+            sensor_Last_Estimate = lastEstimate;
+            sensor_Last_Slope = lastSlope;
+            sensor_Trend = trend;
+            sensor_Last_Estimate_Memory_time_check = memoryTimeCheck;
+            sensor_Last_Estimate_Memory_1 = memory[0];
+            sensor_Last_Estimate_Memory_2 = memory[1];
+            sensor_Last_Estimate_Memory_3 = memory[2];
+            sensor_Last_Estimate_Memory_4 = memory[3];
+            sensor_Last_Estimate_Memory_5 = memory[4];
+            sensor_Last_Estimate_Memory_6 = memory[5];
+            sensor_Last_Estimate_Memory_7 = memory[6];
+            sensor_Last_Estimate_Memory_8 = memory[7];
+            hashmap_Sensor_Readings.clear();
+            hashmap_Sensor_Readings.putAll(readings);
+            last_Alarm_Level = lastAlarmLevel;
+            last_Alarm_Time = lastAlarmTime;
+        }
+    }
+
+    public static void TestValue85(Context ctx) {
+        synchronized (AlarmManager.class) {
+            SensorStateSnapshot before = new SensorStateSnapshot();
+            try {
+                Constants.AppLogDirect(10, "Test Value 85: synthetic local evaluation", ctx);
+                String time = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        .format(new Date());
+                EvaluateSensorAlarm(ctx, time, 85, 0);
+            } finally {
+                before.restore();
+            }
+        }
     }
 
     @SuppressLint("ObsoleteSdkInt")
@@ -341,7 +406,7 @@ public final class AlarmManager {
         }
     }
 
-    public static void EvaluateSensorAlarm(Context ctx, String time, int estimate, int slope)
+    public static synchronized void EvaluateSensorAlarm(Context ctx, String time, int estimate, int slope)
     {
         try {
             // LOG call
@@ -569,7 +634,7 @@ public final class AlarmManager {
                     Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + alarm_level, ctx);
 
                     // do after
-                    CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level);
+                    CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level, estimate);
 
                 } catch (Exception e) {
                     Constants.AppLogDirect(20, "!!! AlarmManager exception: " + e.getMessage(), ctx);
@@ -578,7 +643,7 @@ public final class AlarmManager {
                 try {
                     // BUGFIX 19/07/2019
                     String msg_notification = "xDrip+ " + estimate + " slope " + slope;
-                    CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level);
+                    CreateNotification(ctx, Get_Last_Summary_Value(ctx), msg_notification, alarm_level, estimate);
 
                     Constants.AppLogDirect(10, "   Createnotification " + msg_notification + " level " + alarm_level, ctx);
                 } catch (Exception e) {
@@ -681,6 +746,12 @@ public final class AlarmManager {
 
     public static void CreateNotification(Context ctx, String title, String message, int alert_level)
     {
+        CreateNotification(ctx, title, message, alert_level, null);
+    }
+
+    private static synchronized void CreateNotification(Context ctx, String title, String message,
+                                                         int alert_level, Integer localReadingValue)
+    {
         // test. Problems of context ? we need to pass by an async task ?
         Constants.AppLogDirect(10, "   AlarmManager.CreateNotification(" + message + ", " + alert_level + ")", ctx);
 
@@ -699,9 +770,12 @@ public final class AlarmManager {
             long snoozeUntil = getSnoozeUntil(ctx);
 
             if (snoozeUntil > l_Now) {
-                int minutesLeft = (int) Math.ceil((snoozeUntil - l_Now) / 60000.0);
-                Constants.AppLogDirect(20, "Snoozing active. " + minutesLeft + " minutes left", ctx);
-                return;
+                if (SnoozePolicy.shouldSuppress(true, isAlarmUnder99Enabled(ctx), localReadingValue)) {
+                    int minutesLeft = (int) Math.ceil((snoozeUntil - l_Now) / 60000.0);
+                    Constants.AppLogDirect(20, "Snoozing active. " + minutesLeft + " minutes left", ctx);
+                    return;
+                }
+                Constants.AppLogDirect(10, "Snooze bypassed for current local reading", ctx);
             } else {
                 Constants.AppLogDirect(0, "Snoozing is off", ctx);
             }
